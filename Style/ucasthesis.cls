@@ -12,6 +12,10 @@
 %->> Identification
 %---------------------------------------------------------------------------%
 \NeedsTeXFormat{LaTeX2e}%
+\newcommand*\@iflatexlater{\@ifl@t@r\fmtversion}%
+\@iflatexlater{2017/01/01}{}{%
+    \ClassError{ucasthesis}{TeXLive/MiKTeX >= 2017 is required ...}{}%
+}
 \ProvidesClass{ucasthesis}[2014/10/01 v1.0 LaTeX document class]%
 %---------------------------------------------------------------------------%
 %->> Declare options
@@ -57,6 +61,9 @@
 \else% if double-sided printing isn't enabled
     \LoadClass[UTF8,a4paper,fontset=none,oneside,zihao=-4]{ctexbook}
 \fi
+\@ifclasslater{ctexbook}{2017/01/01}{}{%
+    \ClassError{ucasthesis}{ctex >= 2017/01/01 is required ...}{}%
+}
 %---------------------------------------------------------------------------%
 %->> Required packages
 %---------------------------------------------------------------------------%

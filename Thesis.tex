@@ -21,7 +21,7 @@
 %---------------------------------------------------------------------------%
 %->> Document settings
 %---------------------------------------------------------------------------%
-\usepackage[authoryear,myhdr,list]{artratex}% document settings
+\usepackage[biber,authoryear,myhdr,list]{artratex}% document settings
 %- usage: \usepackage[option1,option2,...,optionN]{artratex}
 %- Multiple optional arguments:
 %- [bibtex|biber]% set bibliography processor and package
@@ -33,6 +33,7 @@
 %- [geometry]% reconfigure page layout via geometry package
 %- [lscape]% provide landscape layout environment
 %- [myhdr]% enable header and footer via fancyhdr package
+%- [xlink]% disable colored hyperlinks and borders
 %- [color]% provide color support via xcolor package
 %- [background]% enable page background
 %- [tikz]% provide complex diagrams via tikz package
@@ -94,7 +95,11 @@
 %-> Bibliography
 %-
 \intotoc{\bibname}% add link to contents table and bookmark
+\artxifstreq{\artxbib}{bibtex}{%
 \bibliography{Biblio/ref}% bibliography
+}{%
+\printbibliography% bibliography
+}
 %-
 %-> Appendix
 %-

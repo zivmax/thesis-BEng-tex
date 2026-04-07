@@ -36,8 +36,31 @@
       ]
     },
     {
+      "name": "clean-bibliography-artifacts",
+      "command": "rm",
+      "args": [
+        "-f",
+        "%DOCFILE%.bbl",
+        "%DOCFILE%.blg",
+        "%OUTDIR%/%DOCFILE%.bbl",
+        "%OUTDIR%/%DOCFILE%.blg"
+      ]
+    },
+    {
       "name": "bibtex-tmp",
       "command": "bibtex",
+      "args": [
+        "%OUTDIR%/%DOCFILE%"
+      ],
+      "env": {
+        "TEXINPUTS": ".//:",
+        "BIBINPUTS": ".//:",
+        "BSTINPUTS": ".//:"
+      }
+    },
+    {
+      "name": "biber-tmp",
+      "command": "biber",
       "args": [
         "%OUTDIR%/%DOCFILE%"
       ],
@@ -50,9 +73,22 @@
   ],
   "latex-workshop.latex.recipes": [
     {
+      "name": "xelatex -> biber -> xelatex x2",
+      "tools": [
+        "mkdir-tmp-tex",
+        "clean-bibliography-artifacts",
+        "xelatex-tmp",
+        "fix-aux-inputs",
+        "biber-tmp",
+        "xelatex-tmp",
+        "xelatex-tmp"
+      ]
+    },
+    {
       "name": "xelatex -> bibtex -> xelatex x2",
       "tools": [
         "mkdir-tmp-tex",
+        "clean-bibliography-artifacts",
         "xelatex-tmp",
         "fix-aux-inputs",
         "bibtex-tmp",

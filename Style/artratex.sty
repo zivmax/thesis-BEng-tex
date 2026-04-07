@@ -55,13 +55,16 @@
 %-
 \newif\ifartx@bibtex \artx@bibtextrue
 \newif\ifartx@biber \artx@biberfalse
+\def\artxbib{bibtex}
 \DeclareOption{bibtex}{%
     \artx@bibtextrue
     \artx@biberfalse
+    \def\artxbib{bibtex}
 }
 \DeclareOption{biber}{%
     \artx@bibtexfalse
     \artx@bibertrue
+    \def\artxbib{biber}
 }
 %-
 %-> Citation and reference style
@@ -121,6 +124,10 @@
 \newif\ifartx@color \artx@colorfalse
 \DeclareOption{color}{%
     \artx@colortrue
+}
+\newif\ifartx@xlink \artx@xlinkfalse
+\DeclareOption{xlink}{%
+    \artx@xlinktrue
 }
 %-
 %-> Page background
@@ -255,63 +262,75 @@
 %-
 %-> Bibliography processor and package
 %-
+\def\artxbibref{Biblio/ref.bib}% bibliography reference file
+\def\artxbibtexnum{Biblio/gbt7714-numerical}% bibtex numbers bst
+\def\artxbibtexauy{Biblio/gbt7714-author-year}% bibtex authoryear bst
+\def\artxbibtexalp{alpha}% bibtex alpha bst
+\def\artxbibernum{Biblio/gb7714-2015}% biber numbers style
+\def\artxbiberauy{Biblio/gb7714-2015ay}% biber authoryear style
+\def\artxbiberalp{alphabetic}% biber alpha style
 %- Bibtex processor + natbib package
 \ifartx@bibtex%
     \ifartx@numbers% enable numbered citation style
+        \newcommand{\bibstyle@super}{\bibpunct{[}{]}{,}{s}{,}{\textsuperscript{,}}}%
+        \newcommand{\bibstyle@numbers}{\bibpunct{[}{]}{,}{n}{,}{,}}%
+        \newcommand{\bibstyle@authoryear}{\bibpunct{(}{)}{;}{a}{,}{,}}%
+        \newcommand{\bibstyle@alpha}{\bibpunct{[}{]}{,}{n}{,}{,}}%
+        \RequirePackage[sort&compress]{natbib}% numbered citation mode
         \ifartx@super% enable superscripted citation style
-            \RequirePackage[square,comma,super,sort&compress]{natbib}% superscripted square bracket
+            \citestyle{super}%
         \else
-            \RequirePackage[square,comma,numbers,sort&compress]{natbib}% square bracket
+            \citestyle{numbers}%
         \fi
-        \bibliographystyle{Biblio/gbt7714-unsrt}% numbered scheme
+        \bibliographystyle{\artxbibtexnum}% numbered scheme
     \fi
     \ifartx@authoryear% enable author year citation style
         \RequirePackage{natbib}% author year citation mode
-        \bibliographystyle{Biblio/gbt7714-plain}% author year scheme
+        \citestyle{authoryear}%
+        \bibliographystyle{\artxbibtexauy}% author year scheme
     \fi
     \ifartx@alpha% enable alpha citation style
         \RequirePackage[square,comma,numbers]{natbib}% square bracket
-        \bibliographystyle{alpha}% alpha scheme
+        \bibliographystyle{\artxbibtexalp}% alpha scheme
     \fi
     \providecommand*{\citetns}[2][]{% text embedded \citet in superscripted mode
-        \begingroup%
-            \let\NAT@mbox=\mbox%
-            \let\@cite\NAT@citenum%
-            \let\NAT@space\NAT@spacechar%
-            \let\NAT@super@kern\relax%
-            \renewcommand\NAT@open{[}%
-            \renewcommand\NAT@close{]}%
-            \citet[#1]{#2}%
-        \endgroup%
+        \begingroup\citestyle{numbers}\citet[#1]{#2}\endgroup%
     }
     \providecommand*{\citepns}[2][]{% text embedded \citep in superscripted mode
-        \begingroup%
-            \let\NAT@mbox=\mbox%
-            \let\@cite\NAT@citenum%
-            \let\NAT@space\NAT@spacechar%
-            \let\NAT@super@kern\relax%
-            \renewcommand\NAT@open{[}%
-            \renewcommand\NAT@close{]}%
-            \citep[#1]{#2}%
-        \endgroup%
+        \begingroup\citestyle{numbers}\citep[#1]{#2}\endgroup%
     }
 \fi
 %- Biber processor + biblatex package
 \ifartx@biber%
+    \AtEndPreamble{\RequirePackage{hyperref}}% enable biblatex detection of hyperref
     \ifartx@numbers% enable numbered citation style
         \ifartx@super% enable superscripted citation style
-            \RequirePackage[style=numeric-comp]{biblatex}%
+            \RequirePackage[backend=biber,style=\artxbibernum,mincitenames=1,maxcitenames=2]{biblatex}%
         \else
-            \RequirePackage[style=numeric-comp]{biblatex}%
+            \RequirePackage[backend=biber,style=\artxbibernum,mincitenames=1,maxcitenames=2]{biblatex}%
+            \renewrobustcmd*{\citet}{\textcite}%
+            \renewrobustcmd*{\citep}{\parencite}%
         \fi
     \fi
     \ifartx@authoryear% enable author year citation style
-        \RequirePackage[style=authoryear]{biblatex}%
+        \RequirePackage[backend=biber,style=\artxbiberauy,mincitenames=1,maxcitenames=2]{biblatex}%
+        \renewrobustcmd*{\citet}{\textcite}%
+        \renewrobustcmd*{\citep}{\parencite}%
     \fi
     \ifartx@alpha% enable alpha citation style
-        \RequirePackage[style=alphabetic]{biblatex}%
+        \RequirePackage[backend=biber,style=\artxbiberalp]{biblatex}%
     \fi
-    \addbibresource{ref.bib}%
+    \addbibresource{\artxbibref}%
+    \providecommand{\citep}[1]{\parencite{#1}}% compatibility
+    \providecommand{\citet}[1]{\textcite{#1}}% compatibility
+    \providecommand{\bibetal}{et al.}% compatibility
+    \providecommand{\biband}{and}% compatibility
+    \DefineBibliographyStrings{english}{%
+        andincite         = {\biband},
+        andothersincite   = {\bibetal{}},
+        andincitecn       = {\biband},
+        andothersincitecn = {\bibetal},
+    }
 \fi
 %-
 %-> Figure environment support
@@ -347,7 +366,7 @@
 %-
 \ifartx@color% enable color package to use color
     %\RequirePackage{color}%
-    \RequirePackage[usenames,dvipsnames,table]{xcolor}%
+    \RequirePackage[dvipsnames,table]{xcolor}%
 \fi
 %-
 %-> Draw graphics directly with TeX commands
@@ -365,7 +384,7 @@
 %-> Complex tables
 %-
 \ifartx@table%
-    \RequirePackage{ctable}% imports the array, tabularx and booktabs packages
+    \RequirePackage{ctable,multirow}% imports the array, tabularx, booktabs and multirow packages
 \fi
 %-
 %-> List structures
@@ -378,31 +397,34 @@
     \setlist{nosep}% default text spacing
     \RequirePackage{listings}% source code
     \RequirePackage{algpseudocode,algorithm,algorithmicx}% algorithm
+    \providecommand{\algname}{Algorithm}%
+    \def\ALG@name{\algname}% rename label
 \fi
 %-
 %-> Links support
 %-
-\RequirePackage{hyperref}%
-\hypersetup{% set hyperlinks
-    %bookmarks=true,% show bookmarks bar
-    pdfencoding=auto,% allows non-Latin based languages in bookmarks
-    %pdftitle={},% title
-    %pdfauthor={},% author
-    %pdfsubject={},% subject
-    %pdftoolbar=true,% show toolbar
-    %pdfmenubar=true,% show menu
-    pdffitwindow=false,% window fit to page when opened
-    pdfstartview={FitH},% fits the width of the page to the window
-    %pdfnewwindow=true,% links in new window
-    %backref=true,% do bibliographical back references
-    %pagebackref=true,% backreference by page number
-    colorlinks=true,% false: boxed links; true: colored links
-    linkcolor=black,% color of internal links
-    citecolor=blue,% color of links to bibliography
-    %filecolor=magenta,% color of file links
-    urlcolor=red,% color of external links
-    bookmarksnumbered=true,% put section numbers in bookmarks
-    %hidelinks% remove link color and border
+\AtEndPreamble{%
+    \RequirePackage{hyperref}% load at last
+    \hypersetup{% set hyperlinks
+        pdfencoding=auto,% allows non-Latin based languages in bookmarks
+        psdextra=true,% extra support for math symbols in bookmarks
+        bookmarksnumbered=true,% put section numbers in bookmarks
+        pdftitle={\@title},% title
+        pdfauthor={\@author},% author
+        pdfsubject={\@title},% subject
+        pdffitwindow=false,% window fit to page when opened
+        pdfstartview={FitH},% fits the width of the page to the window
+        colorlinks=true,% false: boxed links; true: colored links
+        linkcolor=black,% color of internal links
+        citecolor=blue,% color of links to bibliography
+        filecolor=blue,% color of file links
+        urlcolor=blue,% color of external links
+    }
+    \ifartx@xlink% set link color to black
+        \hypersetup{%
+            hidelinks,% remove link color and border
+        }
+    \fi
 }
 %---------------------------------------------------------------------------%
 %->> Configuration command
