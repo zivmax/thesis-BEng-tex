@@ -231,7 +231,19 @@
         \setCJKmainfont[AutoFakeBold,ItalicFont=AdobeKaitiStd-Regular]{AdobeSongStd-Light}%
         \setCJKsansfont[AutoFakeBold]{AdobeHeitiStd-Regular}%
         \setCJKmonofont{AdobeFangsongStd-Regular}%
-    \fi\fi\fi
+    \else\ifartx@others%
+        \IfFontExistsTF{SimSun}{%
+            \setCJKmainfont[AutoFakeBold,ItalicFont=KaiTi,BoldItalicFont=KaiTi]{SimSun}%
+            \setCJKsansfont[AutoFakeBold]{SimHei}%
+            \setCJKmonofont[AutoFakeBold]{FangSong}%
+        }{%
+            \IfFontExistsTF{AR PL UMing CN}{%
+                \setCJKmainfont[AutoFakeBold,ItalicFont=AR PL KaitiM GB,BoldItalicFont=AR PL KaitiM GB]{AR PL UMing CN}%
+                \setCJKsansfont[AutoFakeBold]{WenQuanYi Zen Hei}%
+                \setCJKmonofont[AutoFakeBold]{AR PL SungtiL GB}%
+            }{}
+        }%
+    \fi\fi\fi\fi
     \ifartx@times%
         \setmainfont[NFSSFamily=entextrm]{Times New Roman}%
         \setsansfont[NFSSFamily=entextsf]{Times New Roman}%

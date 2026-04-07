@@ -1,0 +1,65 @@
+{
+  "latex-workshop.latex.outDir": "./Tmp",
+  "latex-workshop.latex.tools": [
+    {
+      "name": "mkdir-tmp-tex",
+      "command": "mkdir",
+      "args": [
+        "-p",
+        "%OUTDIR%/Tex"
+      ]
+    },
+    {
+      "name": "xelatex-tmp",
+      "command": "xelatex",
+      "args": [
+        "-synctex=1",
+        "-interaction=nonstopmode",
+        "-file-line-error",
+        "-output-directory=%OUTDIR%",
+        "%DOC%"
+      ],
+      "env": {
+        "TEXINPUTS": ".//:",
+        "BIBINPUTS": ".//:",
+        "BSTINPUTS": ".//:"
+      }
+    },
+    {
+      "name": "fix-aux-inputs",
+      "command": "sed",
+      "args": [
+        "-i",
+        "-e",
+        "s|\\@input{|\\@input{%OUTDIR%/|g",
+        "%OUTDIR%/%DOCFILE%.aux"
+      ]
+    },
+    {
+      "name": "bibtex-tmp",
+      "command": "bibtex",
+      "args": [
+        "%OUTDIR%/%DOCFILE%"
+      ],
+      "env": {
+        "TEXINPUTS": ".//:",
+        "BIBINPUTS": ".//:",
+        "BSTINPUTS": ".//:"
+      }
+    }
+  ],
+  "latex-workshop.latex.recipes": [
+    {
+      "name": "xelatex -> bibtex -> xelatex x2",
+      "tools": [
+        "mkdir-tmp-tex",
+        "xelatex-tmp",
+        "fix-aux-inputs",
+        "bibtex-tmp",
+        "xelatex-tmp",
+        "xelatex-tmp"
+      ]
+    }
+  ],
+  "latex-workshop.latex.recipe.default": "first"
+}

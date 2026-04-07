@@ -53,9 +53,9 @@
 %->> Load class information
 %---------------------------------------------------------------------------%
 \ifucas@doublesided% if double-sided printing enabled
-    \LoadClass[UTF8,a4paper,twoside,zihao=-4]{ctexbook}
+    \LoadClass[UTF8,a4paper,fontset=none,twoside,zihao=-4]{ctexbook}
 \else% if double-sided printing isn't enabled
-    \LoadClass[UTF8,a4paper,oneside,zihao=-4]{ctexbook}
+    \LoadClass[UTF8,a4paper,fontset=none,oneside,zihao=-4]{ctexbook}
 \fi
 %---------------------------------------------------------------------------%
 %->> Required packages
@@ -119,8 +119,8 @@
 }
 %- underline
 \ifxetex% use underline from xeCJKfntef
-    \renewcommand{\CJKunderlinecolor}{\color[rgb]{0,0,0}}% set underline color
-    \renewcommand{\uline}[1]{\CJKunderline{#1}}% unified name
+    \RequirePackage{xeCJKfntef}% load CJK underline commands and ulem integration
+    \AtBeginDocument{\xeCJKsetup{underline/format=\color[rgb]{0,0,0}}}% set underline color
 \else% use underline from ulem
     \RequirePackage{ulem}%
 \fi
