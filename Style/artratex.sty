@@ -239,16 +239,46 @@
         \setCJKsansfont[AutoFakeBold]{AdobeHeitiStd-Regular}%
         \setCJKmonofont{AdobeFangsongStd-Regular}%
     \else\ifartx@others%
-        \IfFontExistsTF{SimSun}{%
-            \setCJKmainfont[AutoFakeBold,ItalicFont=KaiTi,BoldItalicFont=KaiTi]{SimSun}%
-            \setCJKsansfont[AutoFakeBold]{SimHei}%
-            \setCJKmonofont[AutoFakeBold]{FangSong}%
+        \IfFontExistsTF{Noto Serif CJK SC}{%
+            \IfFontExistsTF{AR PL KaitiM GB}{%
+                \setCJKmainfont[ItalicFont=AR PL KaitiM GB,BoldItalicFont=AR PL KaitiM GB]{Noto Serif CJK SC}%
+            }{%
+                \setCJKmainfont[AutoFakeSlant]{Noto Serif CJK SC}%
+            }%
+            \IfFontExistsTF{Noto Sans CJK SC}{%
+                \setCJKsansfont{Noto Sans CJK SC}%
+            }{%
+                \setCJKsansfont{Noto Serif CJK SC}%
+            }%
+            \IfFontExistsTF{Noto Sans Mono CJK SC}{%
+                \setCJKmonofont{Noto Sans Mono CJK SC}%
+            }{%
+                \setCJKmonofont{Noto Serif CJK SC}%
+            }%
         }{%
-            \IfFontExistsTF{AR PL UMing CN}{%
-                \setCJKmainfont[AutoFakeBold,ItalicFont=AR PL KaitiM GB,BoldItalicFont=AR PL KaitiM GB]{AR PL UMing CN}%
-                \setCJKsansfont[AutoFakeBold]{WenQuanYi Zen Hei}%
-                \setCJKmonofont[AutoFakeBold]{AR PL SungtiL GB}%
-            }{}
+            \IfFontExistsTF{SimSun}{%
+                \setCJKmainfont[AutoFakeBold,ItalicFont=KaiTi,BoldItalicFont=KaiTi]{SimSun}%
+                \setCJKsansfont[AutoFakeBold]{SimHei}%
+                \setCJKmonofont[AutoFakeBold]{FangSong}%
+            }{%
+                \IfFontExistsTF{AR PL UMing CN}{%
+                    \IfFontExistsTF{AR PL KaitiM GB}{%
+                        \setCJKmainfont[AutoFakeBold,ItalicFont=AR PL KaitiM GB,BoldItalicFont=AR PL KaitiM GB]{AR PL UMing CN}%
+                    }{%
+                        \setCJKmainfont[AutoFakeBold]{AR PL UMing CN}%
+                    }%
+                    \IfFontExistsTF{WenQuanYi Zen Hei}{%
+                        \setCJKsansfont[AutoFakeBold]{WenQuanYi Zen Hei}%
+                    }{%
+                        \setCJKsansfont[AutoFakeBold]{AR PL UMing CN}%
+                    }%
+                    \IfFontExistsTF{AR PL SungtiL GB}{%
+                        \setCJKmonofont[AutoFakeBold]{AR PL SungtiL GB}%
+                    }{%
+                        \setCJKmonofont[AutoFakeBold]{AR PL UMing CN}%
+                    }%
+                }{}
+            }%
         }%
     \fi\fi\fi\fi
     \ifartx@times%
