@@ -5,24 +5,27 @@
 %-> 中文封面信息
 %-
 \confidential{}% 密级：只有涉密论文才填写
-\schoollogo{scale=0.5}{ucas_logo}% 校徽
-\title{上海科技大学学位论文\LaTeX{}模板 {$~^{\pi}\pi^{\pi}$}}% 论文中文题目
+\schoollogo{scale=0.2}{ShanghaiTechLogo}% 校徽
+%======论文题目 页眉显示 务必准确========
+\title{动态目标机械臂模仿学习控制策略研究}% 论文中文题目
 \author{唐林峥}% 论文作者
-\advisor{白卫邦~老师~上海科技大学信息科学与技术学院}% 指导教师：姓名 专业技术职务 工作单位
+\ID{2022533087}
+\entranceYear{2022}
+\advisor{白卫邦~教授}% 指导教师：姓名
 \advisorsec{}% 第二指导老师：按情况填写
 \degree{学士}% 学位：学士、硕士、博士
-\degreetype{哲学}% 学位类别：理学、工学、工程、医学等
+\degreetype{工学}% 学位类别：理学、工学、工程、医学等
 \major{计算机科学与技术}% 二级学科专业名称
 \institute{上海科技大学信息科学与技术学院}% 院系名称
 \chinesedate{2026~年~7~月}% 毕业日期：夏季为6月、冬季为12月
 %-
 %-> 英文封面信息
 %-
-\englishtitle{\LaTeX{} Thesis Template\\ of \\ ShanghaiTech University {$~^{\pi}\pi^{\pi}$}}% 论文英文题目
+\englishtitle{Diffusion Imitation Control for Dynamic Robotic Grasping}% 论文英文题目
 \englishauthor{Tang Linzheng}% 论文作者
 \englishadvisor{Supervisor: Weibang Bai}% 指导教师
 \englishdegree{Bachelor}% 学位：Bachelor, Master, Doctor。封面格式将根据英文学位名称自动切换，请确保拼写准确无误
-\englishdegreetype{Philosophy}% 学位类别：Philosophy, Natural Science, Engineering, Economics, Agriculture 等
+\englishdegreetype{Engineering}% 学位类别：Philosophy, Natural Science, Engineering, Economics, Agriculture 等
 \englishthesistype{thesis}% 论文类型： thesis, dissertation
 \englishmajor{Computer Science and Technology}% 二级学科专业名称
 \englishinstitute{School of Information Science and Technology, ShanghaiTech University}% 院系名称
@@ -43,15 +46,19 @@
 \setcounter{page}{1}% 开始页码
 \pagenumbering{Roman}% 页码符号
 
-本文是中国科学院大学学位论文模板ucasthesis的使用说明文档。主要内容为介绍\LaTeX{}文档类ucasthesis的用法，以及如何使用\LaTeX{}快速高效地撰写学位论文。
+动态目标抓取要求机械臂在目标位置、姿态和速度持续变化的情况下完成接近、对齐、闭合和运输。传统基于模型的控制方法在真值观测下具有较强可解释性，但在含噪感知输入下容易把位姿抖动放大为控制抖动；纯学习方法又需要大量高质量示教数据。本文围绕仿真中的动态非合作目标抓取任务，构建了一套由算法专家生成数据、由扩散式模仿学习策略进行抓取阶段规划、由模型预测控制器执行任务空间参考的闭环系统。
 
-\keywords{中国科学院大学，学位论文，\LaTeX{}模板}% 中文关键词
+本文的主要工作包括：第一，搭建固定基座机械臂与动态立方体目标的仿真评估环境，并定义中等难度的平面平移加定轴自旋任务；第二，利用有限状态机和模型预测控制构造专家策略，生成包含12500条原始回合和2934103帧数据的专家数据集，并编译出11909条成功回合对应的扩散策略训练窗口；第三，训练目标中心化的条件扩散策略，使其根据历史相对观测和短时未来目标条件生成末端执行器参考动作块；第四，在200回合评估矩阵上比较扩散策略与MPC专家在真值观测和含噪观测下的闭环成功率。实验结果显示，在真值中等任务的完整运动场景中，扩散策略达到85.0\%成功率，MPC专家达到95.0\%；在若干分解运动场景中，扩散策略可达到94.5\%至100.0\%的成功率。含噪评估表明，扩散策略在中等高斯扰动和强噪声组合下明显优于直接依赖观测的MPC专家，但在轻噪声、漂移、离群和丢帧延迟等条件下仍落后于专家策略。上述结果说明，基于合成专家数据的扩散模仿策略能够在仿真动态抓取任务中形成有效闭环控制能力，同时其鲁棒性、实时性和跨场景泛化仍需要进一步改进。
+
+\keywords{模仿学习，扩散策略，动态目标抓取，模型预测控制，机器人仿真}% 中文关键词
 %-
 %-> 英文摘要
 %-
 \chapter*{Abstract}\chaptermark{Abstract}% 摘要标题
 
-This paper is a help documentation for the \LaTeX{} class ucasthesis, which is  a thesis template for the University of Chinese Academy of Sciences. The main content is about how to use the ucasthesis, as well as how to write thesis efficiently by using \LaTeX{}.
+Dynamic target grasping requires a manipulator to approach, align with, close on, and transport an object while the target pose and velocity keep changing. Model-based controllers are interpretable and reliable with accurate state feedback, but they can turn pose noise into aggressive command jitter. Pure learning methods, on the other hand, require large and consistent demonstrations. This thesis studies a simulation-based dynamic non-cooperative grasping task and implements a closed-loop pipeline in which an algorithmic expert generates demonstrations, a diffusion imitation policy plans grasp-stage task-space references, and a model predictive controller executes the generated references.
 
-\englishkeywords{University of Chinese Academy of Sciences (UCAS), Thesis, \LaTeX{} Template}% 英文关键词
+The main contributions are fourfold. First, a fixed-base manipulator simulation environment is built for a medium-difficulty dynamic cube task with planar translation and fixed-axis spin. Second, an expert finite-state controller with MPC execution is used to generate a raw dataset of 12500 episodes and 2934103 frames, which is compiled into 11909 successful episodes and more than 430000 diffusion-policy training windows. Third, a target-centric conditional diffusion policy is trained to predict end-effector action chunks from relative observation history and short-horizon target-motion conditions. Fourth, the learned policy is compared with the MPC expert over 200-episode evaluation matrices under ground-truth and noisy observations. In the full ground-truth medium scene, the diffusion policy reaches 85.0\% success while the MPC expert reaches 95.0\%. In decomposed motion variants, the diffusion policy reaches 94.5\% to 100.0\% success. Under noisy observations, the diffusion policy is much more robust than the expert under moderate Gaussian jitter and strong combined noise, while it remains weaker under mild noise, drift, outliers, and dropout-latency perturbations. These results show that synthetic-expert diffusion imitation can provide effective closed-loop control for the simulated dynamic grasping task, while robustness, real-time performance, and generalization remain important future work.
+
+\englishkeywords{Imitation Learning, Diffusion Policy, Dynamic Grasping, Model Predictive Control, Robotic Simulation}% 英文关键词
 %---------------------------------------------------------------------------%

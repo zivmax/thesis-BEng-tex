@@ -11,7 +11,7 @@
 %---------------------------------------------------------------------------%
 %->> Document class declaration
 %---------------------------------------------------------------------------%
-\documentclass[doublesided]{ucasthesis}%
+\documentclass[singlesided]{ucasthesis}%
 %- Multiple optional arguments:
 %- [<singlesided|doublesided|printcopy>]% set one or two sided eprint or print
 %- [draftversion]% show draft version information
@@ -21,7 +21,7 @@
 %---------------------------------------------------------------------------%
 %->> Document settings
 %---------------------------------------------------------------------------%
-\usepackage[biber,authoryear,myhdr,list]{artratex}% document settings
+\usepackage[biber,numbers,myhdr,list]{artratex}% document settings
 %- usage: \usepackage[option1,option2,...,optionN]{artratex}
 %- Multiple optional arguments:
 %- [bibtex|biber]% set bibliography processor and package
@@ -81,16 +81,21 @@
 %\intotoc{\contentsname}% add link to contents table and bookmark
 \tableofcontents% contents catalog
 %\intotoc{\listfigurename}% add link to contents table and bookmark
-\listoffigures% figures catalog
+%\listoffigures% figures catalog
 %\intotoc{\listtablename}% add link to contents table and bookmark
-\listoftables% tables catalog
+%\listoftables% tables catalog
 }
-\input{Tex/Prematter}% list of symbols, preface content
+%\input{Tex/Prematter}% list of symbols, preface content
 %-
 %-> Mainmatter
 %-
 \mainmatter% initialize the environment
 \input{Tex/Mainmatter}% main content
+%-
+%-> Appendix
+%-
+\appendix% initialize appendix chapters
+\input{Tex/Appendix}% reproducibility appendix
 %-
 %-> Bibliography
 %-
@@ -101,16 +106,10 @@
 \printbibliography% bibliography
 }
 %-
-%-> Appendix
+%-> Backmatter
 %-
-\cleardoublepage%
-\appendix% initialize the environment
-\input{Tex/Appendix}% appendix content
-% %-
-% %-> Backmatter: glossary, index
-% %-
-% \backmatter% initialize the environment
-% \input{Tex/Backmatter}% other information
+\backmatter% initialize the environment
+\input{Tex/Backmatter}% acknowledgements
 \end{document}
 %---------------------------------------------------------------------------%
 

@@ -528,31 +528,41 @@
     \renewcommand{\sectionmark}[1]{\markright{\MakeUppercase{#1}}{}}%
     %- deactivate uppercase effect
     \renewcommand{\MakeUppercase}[1]{#1}%
+    \RequirePackage{lastpage}% total page count for ShanghaiTech footer
     %- Define different kinds of header and footer for different parts
     \fancypagestyle{frontmatterstyle}{% style for frontmatter
         \fancyhf{}% clear fields
-        \fancyhead[CE]{\footnotesize \@title}% structure elements
-        \fancyhead[CO]{\footnotesize \leftmark}% structure elements
-        \fancyfoot[CE]{\footnotesize \thepage}% page number
-        \fancyfoot[CO]{\footnotesize \thepage}% page number
+        % \fancyhead[CE]{\footnotesize \@title}% structure elements
+        % \fancyhead[C]{\footnotesize \leftmark}% structure elements
+        \fancyhead[L]{\includegraphics[width=8em]{ShanghaiTech_Logo.png}}
+        \fancyhead[R]{\footnotesize \@title}
+        \fancyfoot[C]{\footnotesize \thepage}% page number
         \renewcommand{\headrulewidth}{0.8pt}% header rule
         \renewcommand{\footrulewidth}{0pt}% footer rule
     }
     \fancypagestyle{mainmatterstyle}{% style for mainmatter
         \fancyhf{}% clear fields
-        \fancyhead[CE]{\footnotesize \@title}% structure elements
-        \fancyhead[CO]{\footnotesize \CTEXthechapter\ \leftmark}% structure elements
-        \fancyfoot[LE]{\footnotesize \thepage}% page number
-        \fancyfoot[RO]{\footnotesize \thepage}% page number
+        % \fancyhead[CE]{\footnotesize \@title}% structure elements
+        % \fancyhead[C]{\footnotesize \CTEXthechapter\ \leftmark}% structure elements
+        % \fancyfoot[LE]{\footnotesize \thepage}% page number
+        % \fancyfoot[RO]{\footnotesize \thepage}% page number
+        \fancyhead[L]{\includegraphics[width=8em]{ShanghaiTech_Logo.png}}
+        \fancyhead[R]{\footnotesize \@title}
+        %\fancyfoot[C]{\thepage/\pageref{LastPage}}
+        \fancyfoot[C]{第\thepage 页 \; 共\pageref{LastPage}页}
         \renewcommand{\headrulewidth}{0.8pt}% header rule
         \renewcommand{\footrulewidth}{0pt}% footer rule
     }
     \fancypagestyle{backmatterstyle}{% header and footer style for backmatter
         \fancyhf{}% clear fields
-        \fancyhead[CE]{\footnotesize \@title}% structure elements
-        \fancyhead[CO]{\footnotesize \leftmark}% structure elements
-        \fancyfoot[LE]{\footnotesize \thepage}% page number
-        \fancyfoot[RO]{\footnotesize \thepage}% page number
+        % \fancyhead[CE]{\footnotesize \@title}% structure elements
+        % \fancyhead[C]{\footnotesize \leftmark}% structure elements
+        % \fancyfoot[LE]{\footnotesize \thepage}% page number
+        % \fancyfoot[RO]{\footnotesize \thepage}% page number
+        \fancyhead[L]{\includegraphics[width=8em]{ShanghaiTech_Logo.png}}
+        \fancyhead[R]{\footnotesize \@title}
+        %\fancyfoot[C]{\thepage/\pageref{LastPage}}
+        \fancyfoot[C]{第\thepage 页 \; 共\pageref{LastPage}页}
         \renewcommand{\headrulewidth}{0.8pt}% header rule
         \renewcommand{\footrulewidth}{0pt}% footer rule
     }
@@ -591,8 +601,7 @@
         \fancyhf{}% clear fields
         %\fancyhead[CE]{\footnotesize \@title}% structure elements
         %\fancyhead[CO]{\footnotesize \leftmark}% structure elements
-        \fancyfoot[LE]{\footnotesize \thepage}% page number
-        \fancyfoot[RO]{\footnotesize \thepage}% page number
+        \fancyfoot[C]{\footnotesize \thepage}% page number
         \renewcommand{\headrulewidth}{0pt}% header rule
         \renewcommand{\footrulewidth}{0pt}% footer rule
     }

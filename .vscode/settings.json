@@ -20,9 +20,9 @@
         "%DOC%"
       ],
       "env": {
-        "TEXINPUTS": ".//:",
-        "BIBINPUTS": ".//:",
-        "BSTINPUTS": ".//:"
+        "TEXINPUTS": "./Style:./Tex:./Img:./Biblio:",
+        "BIBINPUTS": "./Biblio:",
+        "BSTINPUTS": "./Biblio:"
       }
     },
     {
@@ -53,9 +53,9 @@
         "%OUTDIR%/%DOCFILE%"
       ],
       "env": {
-        "TEXINPUTS": ".//:",
-        "BIBINPUTS": ".//:",
-        "BSTINPUTS": ".//:"
+        "TEXINPUTS": "./Style:./Tex:./Img:./Biblio:",
+        "BIBINPUTS": "./Biblio:",
+        "BSTINPUTS": "./Biblio:"
       }
     },
     {
@@ -65,9 +65,9 @@
         "%OUTDIR%/%DOCFILE%"
       ],
       "env": {
-        "TEXINPUTS": ".//:",
-        "BIBINPUTS": ".//:",
-        "BSTINPUTS": ".//:"
+        "TEXINPUTS": "./Style:./Tex:./Img:./Biblio:",
+        "BIBINPUTS": "./Biblio:",
+        "BSTINPUTS": "./Biblio:"
       }
     }
   ],

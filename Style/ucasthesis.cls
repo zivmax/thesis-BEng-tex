@@ -69,6 +69,7 @@
 %---------------------------------------------------------------------------%
 \RequirePackage{ifxetex}% LaTeX engine detection
 \RequirePackage{etoolbox}% a toolbox of programming facilities
+\RequirePackage{array}% tabular column helpers for the ShanghaiTech title pages
 \newcommand{\ucasifstreq}{\expandafter\ifstrequal\expandafter}% expansion control
 \newcommand{\ucasifstrbk}{\expandafter\ifblank\expandafter}% expansion control
 %---------------------------------------------------------------------------%
@@ -104,8 +105,8 @@
 %- top height = 1.0in (fixed) + voffset + topmargin + headheight + headsep 
 \setlength{\textheight}{246.2mm}% set required text height first
 \setlength{\voffset}{-17.4mm}% set vertical offset
-\setlength{\topmargin}{20pt}% vertical margin above header
-\setlength{\headheight}{12pt}% header height
+\setlength{\topmargin}{1pt}% vertical margin above header
+\setlength{\headheight}{31pt}% header height
 \setlength{\headsep}{17.5pt}% vertical margin between header and body text
 \setlength{\footskip}{29.5pt}% vertical margin between footer and body text
 %- specifies the amount of space between paragraphs.
@@ -137,6 +138,8 @@
 \newcommand{\ulhshift}{-4em}% horizontal shift on underline
 \newcommand{\ulextend}[2][350pt]{% extend underline length
     \hbox to #1{\hfill\hspace*{\ulhshift}#2\hfill}}
+\newcommand{\englishulextend}[2][400pt]{% extend underline length
+    \hbox to #1{\hfill\hspace*{\ulhshift}#2\hfill}}
 %---------------------------------------------------------------------------%
 %->> Titlepage
 %---------------------------------------------------------------------------%
@@ -156,6 +159,10 @@
 \renewcommand{\@title}{\ucas@value@titlemark}
 \def\ucas@value@author{}
 \renewcommand{\author}[1]{\def\ucas@value@author{#1}}
+\def\ucas@value@ID{}
+\newcommand{\ID}[1]{\def\ucas@value@ID{#1}}
+\def\ucas@value@year{}
+\newcommand{\entranceYear}[1]{\def\ucas@value@year{#1}}
 \def\ucas@value@advisor{}
 \newcommand{\advisor}[1]{\def\ucas@value@advisor{#1}}
 \def\ucas@value@advisorsec{}
@@ -190,15 +197,14 @@
     }}%
     \cleardoublepage
     \thispagestyle{empty}
+    {\ucas@value@schoollogo}
     \begin{center}
         \linespread{1.5}
         \zihao{4}\bfseries
 
         \hfill{} \ucasifstrbk{\ucas@value@confidential}{}{\ucas@label@confidential \ulenhance{\ulextend[50pt]{\hspace*{-\ulhshift}\zihao{5}\ucas@value@confidential}}}
 
-        \vspace*{\stretch{4}}
-
-        {\ucas@value@schoollogo}
+        % \vspace*{\stretch{4}}
 
         \vspace*{\stretch{2}}
 
@@ -206,23 +212,27 @@
 
         \vspace*{\stretch{3}}
 
-        {\zihao{-3}\bfseries\sffamily \ulenhance[1.5pt]{\ \ucas@value@title\ }}
+        % {\zihao{-3}\bfseries\sffamily \ulenhance[1.5pt]{\ \ucas@value@title\ }}
 
         \vspace*{\stretch{3}}
 
         \def\tabcolsep{1pt}
         \def\arraystretch{1.3}
         \begin{tabular}{lc}
+            \ucas@label@title & \ulenhance[1.2pt]{\ulextend{\ucas@value@title}}\\
             \ucas@label@author & \ulenhance[1.2pt]{\ulextend{\ucas@value@author}}\\
-            \ucas@label@advisor & \ulenhance[1.2pt]{\ulextend{\ucas@value@advisor}}\\
-            & \ulenhance[1.2pt]{\ulextend{\ucas@value@advisorsec}}\\
-            \ucas@label@degree & \ulenhance[1.2pt]{\ulextend{\ucas@value@degreetype\ucas@value@degree}}\\
-            \ucas@label@major & \ulenhance[1.2pt]{\ulextend{\ucas@value@major}}\\
+            \ucas@label@ID & \ulenhance[1.2pt]{\ulextend{\ucas@value@ID}}\\
+            \ucas@label@year & \ulenhance[1.2pt]{\ulextend{\ucas@value@year}}\\
             \ucas@label@institute & \ulenhance[1.2pt]{\ulextend{\ucas@value@institute}}\\
+            \ucas@label@major & \ulenhance[1.2pt]{\ulextend{\ucas@value@major}}\\
+            \ucas@label@advisor & \ulenhance[1.2pt]{\ulextend{\ucas@value@advisor}}\\
+            % & \ulenhance[1.2pt]{\ulextend{\ucas@value@advisorsec}}\\
+            % \ucas@label@degree & \ulenhance[1.2pt]{\ulextend{\ucas@value@degreetype\ucas@value@degree}}\\
         \end{tabular}
 
-        \vspace*{\stretch{4.5}}
+        \vspace*{\stretch{6}}
 
+        {上海科技大学教学事务处制}\\
         {\ucas@value@chinesedate}
 
         \vspace*{\stretch{3.5}}
@@ -277,31 +287,39 @@
 \newcommand{\makeenglishtitle}{%
     \cleardoublepage
     \thispagestyle{empty}
+    {\ucas@value@schoollogo}
     \begin{center}
         \linespread{1.5}
         \zihao{4}\bfseries
 
         \vspace*{50pt}
 
-        {\zihao{-3}\bfseries \ulenhance[1.5pt]{\ \ucas@value@englishtitle\ }}
+        {\LARGE\bfseries {\ Thesis of Bachelor\ }}
 
         \vspace*{\stretch{2}}
 
-        {\ucas@label@englishstatement}
+        % {\ucas@label@englishstatement}
+        \newcolumntype{C}{>{}r<{ }}
+        \def\tabcolsep{1pt}
+        \def\arraystretch{1.3}
 
-        {By}
-
-        {\ucas@value@englishauthor}
-
-        {\ucas@value@englishadvisor}
+        \begin{tabular}{lc}
+            \ucas@label@englishtitle & \ulenhance[1.2pt]{\ulextend{\ucas@value@englishtitle}}\\
+            \ucas@label@englishauthor & \ulenhance[1.2pt]{\ulextend{\ucas@value@englishauthor}}\\
+            \ucas@label@englishID & \ulenhance[1.2pt]{\ulextend{\ucas@value@ID}}\\
+            \ucas@label@englishyear & \ulenhance[1.2pt]{\ulextend{\ucas@value@year}}\\
+            \ucas@label@englishinstitute & \ulenhance[1.2pt]{\ulextend{\ucas@value@englishinstitute}}\\
+            \ucas@label@englishmajor & \ulenhance[1.2pt]{\ulextend{\ucas@value@major}}\\
+            \ucas@label@englishadvisor & \ulenhance[1.2pt]{\ulextend{\ucas@value@englishadvisor}}\\
+            % & \ulenhance[1.2pt]{\ulextend{\ucas@value@advisorsec}}\\
+            % \ucas@label@degree & \ulenhance[1.2pt]{\ulextend{\ucas@value@degreetype\ucas@value@degree}}\\
+        \end{tabular}
 
         \vspace*{\stretch{3}}
 
-        {\ucas@value@englishinstitute}
+        {Made by Office of Academic Affairs, ShanghaiTech University}
 
-        \vspace*{\stretch{1}}
-
-        {\ucas@value@englishdate}
+        {\ucas@label@englishdate\ucas@value@englishdate}
 
         \vspace*{\stretch{3}}
     \end{center}
@@ -316,7 +334,7 @@
 %---------------------------------------------------------------------------%
 \newcommand{\makedeclaration}{%
     \cleardoublepage
-    \thispagestyle{empty}
+    \thispagestyle{fancy}
     {
         \linespread{1.5}
         \zihao{-4}
