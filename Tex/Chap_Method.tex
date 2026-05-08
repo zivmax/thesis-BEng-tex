@@ -2,72 +2,289 @@
 
 \section{仿真环境与任务设置}
 
-本文使用动态立方体抓取环境作为实验平台。机器人为固定基座机械臂，目标为边长$0.05\,\mathrm{m}$的立方体。中等难度真值环境由\path{config/env_gt_medium.yaml}定义，仿真步长为$0.01\,\mathrm{s}$，目标区域中心为$(0.20,0.00,0.60)\,\mathrm{m}$，目标区域半径为$0.10\,\mathrm{m}$，每个回合最长2400步。立方体初始位置在$x\in[0.15,0.35]$、$y\in[-0.35,0.35]$、$z=0.25$范围内采样，线速度在平面内采样，角速度绕固定$z$轴采样，角速度大小为$15$至$30\,\mathrm{deg/s}$。
+本文使用动态立方体抓取环境作为实验平台。机器人为固定基座机械臂，目标为边长$0.05\,\mathrm{m}$的立方体。任务仿真步长为$0.01\,\mathrm{s}$，目标区域中心为$(0.20,0.00,0.60)\,\mathrm{m}$，目标区域半径为$0.10\,\mathrm{m}$，每个回合最长2400步。立方体初始位置在$x\in[0.15,0.35]$、$y\in[-0.35,0.35]$、$z=0.25$范围内采样，线速度在平面内采样，角速度绕固定$z$轴采样，角速度大小为$15$至$30\,\mathrm{deg/s}$。
 
 环境观测包含立方体位置、姿态、线速度、角速度，末端执行器位置、姿态，夹爪开合状态，以及机器人关节位置。专家策略可以使用仿真真值观测；含噪实验则通过感知包装器在观测路径上加入高斯噪声、漂移、离群点、丢帧和延迟等扰动。成功判定由环境在闭环执行中给出，要求系统完成接近、抓取、保持和运输相关阶段。
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.90\textwidth]{fig_task_setup}
+    \bicaption{动态立方体抓取任务设置示意图。}{Schematic illustration of the dynamic cube grasping task.}
+    \label{fig:task-setup}
+\end{figure}
+
+从控制角度看，本文任务可以写成离散时间闭环系统。设仿真内部状态为$x_t$，机器人低层控制输入为$u_t$，观测为$z_t$，则环境动力学和观测模型可抽象为
+\begin{equation}
+    x_{t+1}=f(x_t,u_t),\qquad z_t=h(x_t)+\eta_t,
+    \label{eq:closed-loop-dynamics}
+\end{equation}
+其中$\eta_t$表示感知噪声，在真值观测实验中$\eta_t=0$。记目标区域中心为$p^g$，目标区域半径为$r_g$，则本文环境中的成功集合可概括为
+\begin{equation}
+    \mathcal{G}=\left\{x_t:\left\|p^c_t-p^g\right\|_2\leq \frac{r_g}{2},\;
+    \mathrm{grasped}(x_t)=1\right\}.
+    \label{eq:success-set}
+\end{equation}
+在最长步数$T_{\max}$内，学习策略的闭环目标不是最小化单步动作误差本身，而是最大化到达成功集合的概率：
+\begin{equation}
+    \max_\theta\; \mathbb{P}_{x_0,\eta_{0:T_{\max}}}
+    \left[\exists t\leq T_{\max},\;x_t\in\mathcal{G}\mid u_t=\kappa(x_t,\pi_\theta(O_t,C_t))\right].
+    \label{eq:closed-loop-objective}
+\end{equation}
+由于该目标不可直接对仿真接触过程求导，本文采用专家监督学习近似求解。模仿学习策略不直接输出关节控制量，而是生成未来一段任务空间参考
+\begin{equation}
+    \hat{A}_t = \pi_\theta(O_t,C_t)
+    =\left\{\hat{a}_{t,0},\hat{a}_{t,1},\ldots,\hat{a}_{t,H_a-1}\right\},
+    \label{eq:policy-map}
+\end{equation}
+其中$O_t$为历史观测窗口，$C_t$为未来目标条件窗口，$H_a$为动作块长度。下层控制器$\kappa$读取当前参考$\hat{a}_{t,0}$并产生可执行控制$u_t=\kappa(x_t,\hat{a}_{t,0})$。因此本文学习问题的核心是估计从$(O_t,C_t)$到专家动作块$A_t^*$的映射，而不是端到端学习完整机器人动力学。
+
+含噪观测实验中的$\eta_t$不是单一白噪声，而是由多种感知退化组成。为统一描述，令$\bar{z}_t=h(x_t)$为真值观测，$\xi_t\sim\mathcal{N}(0,\Sigma)$为高斯扰动，$b_t$为慢变漂移项，$\rho_t\sim\operatorname{Bernoulli}(p_o)$为离群帧指示变量，$m_t\sim\operatorname{Bernoulli}(p_d)$为丢帧指示变量，$\ell$为延迟步数，则可写为
+\begin{align}
+    z_t^{\mathrm{gauss}} &= \bar{z}_t+\xi_t, \\
+    b_{t+1} &= \left(1-\frac{\Delta t}{\tau}\right)b_t+\sigma_b\sqrt{\Delta t}\,\epsilon_t,\qquad
+        z_t^{\mathrm{drift}}=\bar{z}_t+b_t, \\
+    z_t^{\mathrm{outlier}} &= (1-\rho_t)\bar{z}_t+\rho_t\,\zeta_t, \\
+    z_t^{\mathrm{drop/lat}} &=
+    \begin{cases}
+        z_{t-1}, & m_t=1,\\
+        \bar{z}_{t-\ell}, & m_t=0,
+    \end{cases}
+    \label{eq:noise-models}
+\end{align}
+其中$\epsilon_t$为标准正态噪声，$\zeta_t$为离群观测采样值，$\tau$为漂移时间常数。完整噪声配置可视为上述扰动在同一观测通路上的组合。该形式解释了第\ref{chap:results}章中不同噪声类型的差异：高斯扰动主要带来高频抖动，漂移主要带来低频偏置，丢帧和延迟则使策略看到过时状态。
 
 \section{专家策略与数据采集}
 
 专家策略采用有限状态机组织任务阶段，包括approach、dwell、close、hold和transport等阶段。approach阶段将末端执行器移动到目标相对抓取位姿附近；dwell阶段在目标运动中维持相对对齐；close阶段执行夹爪闭合；hold和transport阶段确认稳定抓取并将目标送往目标区域。专家内部结合任务几何构造参考位姿，并由MPC求解器在任务空间和关节空间之间执行跟踪。
 
-该专家不是人类遥操作专家，而是“算法即专家”的合成示教源。这样做有两个直接优点：其一，仿真真值可以提供目标速度和姿态，便于生成相位清晰的示教；其二，批量采集可以覆盖大量初始位置、速度和角速度条件，降低人类示教成本。中等任务原始数据集位于\path{dataset/expert_medium}，元数据记录总回合数为12500，总帧数为2934103。记录的动作标签包括目标位置、目标姿态和夹爪命令，观测标签包括立方体、末端执行器、夹爪和关节状态。
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.92\textwidth]{fig_expert_mpc}
+    \bicaption{算法专家与共享MPC执行器结构。}{Structure of the algorithmic expert and shared MPC executor.}
+    \label{fig:expert-mpc}
+\end{figure}
 
-\section{数据编译与表示}
+MPC执行器在每个控制时刻求解有限时域跟踪问题。记第$k$步预测末端位置和姿态为$(p^e_{t+k},q^e_{t+k})$，学习策略或专家给出的任务空间参考为$(p^r_{t+k},q^r_{t+k})$，则目标函数可概括为
+\begin{align}
+    \min_{u_{t:t+H_m-1}}\quad
+    J_t = \sum_{k=0}^{H_m-1} &\left(
+        w_p\left\|p^e_{t+k}-p^r_{t+k}\right\|_2^2
+        + w_R d_R(q^e_{t+k},q^r_{t+k})^2 \right. \notag \\
+        &\left. + w_u\left\|u_{t+k}\right\|_2^2
+        + w_\Delta\left\|u_{t+k}-u_{t+k-1}\right\|_2^2
+    \right),
+    \label{eq:mpc-objective}
+\end{align}
+其中$H_m$为MPC预测时域，$w_p,w_R,w_u,w_\Delta$为位置、姿态、控制量和平滑性权重。姿态误差使用四元数测地距离
+\begin{equation}
+    d_R(q_1,q_2)=2\arccos\left(\left|\left\langle q_1,q_2\right\rangle\right|\right).
+    \label{eq:quat-distance}
+\end{equation}
+实际求解还受到关节位置、速度、动作范围和夹爪状态等约束。专家策略和学习策略共享这一执行器，因此第\ref{chap:results}章中不同学习模型的差异主要来自参考动作块生成质量，而不是底层执行器不同。
 
-扩散策略不直接读取完整原始回合，而是由编译器把成功回合转换成定长训练窗口。配置\path{config/dp_medium.yaml}中设定历史观测窗口$H_o=16$，动作预测窗口$H_a=32$，未来条件窗口为50，步长仍为$0.01\,\mathrm{s}$。编译过程只保留成功回合，并采用grasp-only设置聚焦抓取相关片段。最终编译数据位于\path{dataset/compiled_diffusion_medium}，包含11909个回合、387931个训练窗口和43036个验证窗口。
+本文采用算法专家而非人类遥操作示教。该选择有两个直接优点：其一，仿真真值可以提供目标速度和姿态，便于生成相位清晰的示教；其二，批量采集可以覆盖大量初始位置、速度和角速度条件，降低示教成本。原始数据包含12500个专家回合和2934103帧。记录的动作标签包括目标位置、目标姿态和夹爪命令，观测标签包括立方体、末端执行器、夹爪和关节状态。
 
-表~\ref{tab:dataset-summary}总结了中等任务数据规模。
+\section{数据构造与目标中心化表示}
+
+专家轨迹首先按任务成功性进行筛选，再转换为定长监督学习样本。每个样本包含长度为$H_o=16$的历史观测窗口、长度为$H_a=32$的动作预测窗口和长度为$H_c=50$的未来目标条件窗口，时间步长为$0.01\,\mathrm{s}$。训练样本集中于抓取相关阶段，并在所有学习策略之间共享，以保证不同模型之间的比较主要反映策略结构差异。最终数据集包含11909个成功回合、387931个训练窗口和43036个验证窗口。
+
+表~\ref{tab:dataset-summary}总结了本文数据集规模。
 
 \begin{table}[!htbp]
-    \bicaption{中等任务数据集规模。}{Dataset scale for the medium task.}
+    \bicaption{动态抓取数据集规模。}{Dataset scale for the dynamic grasping task.}
     \label{tab:dataset-summary}
     \centering
     \small
     \begin{tabular}{lrr}
         \hline
-        数据项 & 数量 & 来源 \\
+        数据项 & 数量 & 说明 \\
         \hline
-        原始专家回合 & 12500 & \path{dataset/expert_medium/meta.json} \\
-        原始帧数 & 2934103 & \path{dataset/expert_medium/meta.json} \\
-        编译成功回合 & 11909 & \path{dataset/compiled_diffusion_medium/manifest.json} \\
-        训练窗口 & 387931 & \path{dataset/compiled_diffusion_medium/manifest.json} \\
-        验证窗口 & 43036 & \path{dataset/compiled_diffusion_medium/manifest.json} \\
+        原始专家回合 & 12500 & 合成MPC专家示教 \\
+        原始帧数 & 2934103 & 闭环仿真轨迹帧 \\
+        筛选成功回合 & 11909 & 用于监督学习的成功轨迹 \\
+        训练窗口 & 387931 & 目标中心化动作块样本 \\
+        验证窗口 & 43036 & 留出验证集样本 \\
         \hline
     \end{tabular}
 \end{table}
 
 动态抓取中的主要学习难点之一是世界坐标动作分布随目标平移和自旋快速变化。如果直接学习世界坐标中的末端参考，同一种抓取意图会对应大量数值差异较大的动作标签。本文采用目标中心化表示：将末端执行器相对位置、相对姿态、立方体局部角速度和夹爪状态组合为历史观测特征；将未来目标运动外推表示为相对位移和相对姿态变化；将专家末端参考同样转换为相对目标坐标系下的动作。
 
-编译后的每个历史观测维度为11，包括相对末端位置3维、相对末端四元数4维、目标局部角速度3维和夹爪状态1维。未来条件每步7维，包括相对位移3维和相对四元数4维。动作每步8维，包括相对目标位置3维、相对目标四元数4维和夹爪命令1维。
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.92\textwidth]{fig_target_centric}
+    \bicaption{目标中心化观测、条件和动作表示。}{Target-centric representation of observations, conditions, and actions.}
+    \label{fig:target-centric}
+\end{figure}
 
-设$t$时刻的历史观测特征为$o_t$，未来目标条件为$c_t$，专家动作标签为$a_t$，则本文使用的学习样本可表示为
+设立方体位置和姿态为$(p^c_t,q^c_t)$，末端执行器位置和姿态为$(p^e_t,q^e_t)$，$R(q)$表示四元数对应的旋转矩阵，$\otimes$表示四元数乘法。目标中心化历史观测中的相对末端状态定义为
+\begin{align}
+    \tilde{p}^e_t &= R(q^c_t)^\top\left(p^e_t-p^c_t\right), \\
+    \tilde{q}^e_t &= \left(q^c_t\right)^{-1}\otimes q^e_t, \\
+    \tilde{\omega}^c_t &= R(q^c_t)^\top \omega^c_t,
+    \label{eq:target-centric-observation}
+\end{align}
+其中$\omega^c_t$为立方体角速度。未来目标条件使用当前目标坐标系下的相对位移和相对姿态变化表示：
+\begin{align}
+    c_{t,k}=\left[
+        R(q^c_t)^\top\left(p^c_{t+k}-p^c_t\right),
+        \left(q^c_t\right)^{-1}\otimes q^c_{t+k}
+    \right],\quad k=0,\ldots,H_c-1.
+    \label{eq:future-condition}
+\end{align}
+专家给出的第$k$步任务空间参考$(p^{*,e}_{t+k},q^{*,e}_{t+k},g^*_{t+k})$也转换到对应目标坐标系：
+\begin{align}
+    a^*_{t,k}=\left[
+        R(q^c_{t+k})^\top\left(p^{*,e}_{t+k}-p^c_{t+k}\right),
+        \left(q^c_{t+k}\right)^{-1}\otimes q^{*,e}_{t+k},
+        g^*_{t+k}
+    \right].
+    \label{eq:target-centric-action}
+\end{align}
+这种表示把平移和自旋造成的全局坐标变化吸收到坐标变换中，使学习模型更接近学习“相对目标如何抓取”的局部规律。
+
+在闭环控制中，策略输出的相对动作需映射回世界坐标参考。若模型输出$\hat{a}_{t,k}=(\hat{p}^{\,rel}_{t,k},\hat{q}^{\,rel}_{t,k},\hat{g}_{t,k})$，则对应世界坐标参考为
+\begin{align}
+    \hat{p}^{\,r}_{t+k} &= p^c_{t+k}+R(q^c_{t+k})\hat{p}^{\,rel}_{t,k}, \\
+    \hat{q}^{\,r}_{t+k} &= q^c_{t+k}\otimes \hat{q}^{\,rel}_{t,k}, \\
+    \hat{g}^{\,r}_{t+k} &= \operatorname{clip}(\hat{g}_{t,k},0,1).
+    \label{eq:relative-action-decode}
+\end{align}
+因此每个动作可看成$\mathrm{SE}(3)\times[0,1]$上的任务空间参考，其中$\mathrm{SE}(3)$部分描述末端相对立方体的位姿，$[0,1]$部分描述夹爪开合命令。
+
+在上述表示下，每个历史观测向量为11维，包括相对末端位置3维、相对末端四元数4维、目标局部角速度3维和夹爪状态1维。未来条件每步7维，包括相对位移3维和相对四元数4维。动作每步8维，包括相对目标位置3维、相对目标四元数4维和夹爪命令1维。
+
+设$t$时刻的历史观测特征为$o_t$，未来目标条件为$c_t$，专家动作标签为$a_t^*$，则本文使用的学习样本可表示为
 \begin{equation}
-    (o_{t-H_o+1:t}, c_{t:t+H_c-1}) \rightarrow a_{t:t+H_a-1},
+    O_t=\left[o_{t-H_o+1},\ldots,o_t\right],\quad
+    C_t=\left[c_{t,0},\ldots,c_{t,H_c-1}\right],\quad
+    A_t^*=\left[a^*_{t,0},\ldots,a^*_{t,H_a-1}\right].
+    \label{eq:training-sample}
 \end{equation}
 其中$H_o=16$，$H_c=50$，$H_a=32$。这种形式使策略在生成当前动作时同时利用过去观测和短时未来目标外推信息。
 
-\section{扩散策略设计}
+\section{模仿学习策略设计}
 
-本文策略采用条件扩散策略框架。扩散模型在训练时学习从带噪动作块恢复专家动作块，在推理时从随机噪声开始逐步去噪，得到未来动作序列。模型结构由三部分组成：历史编码器、未来条件编码器和一维U-Net去噪网络。历史编码器使用因果一维卷积提取过去16步观测；未来条件编码器处理50步目标运动条件；U-Net在扩散时间步、历史嵌入和未来条件嵌入的调制下预测动作噪声。除连续动作去噪头外，模型还包含close事件预测和阶段分类分支，用于表达抓取任务中的离散相位信息。
+本文把不同学习模型放在同一闭环接口下比较。所有模仿策略都接收相同的历史观测和未来目标条件，输出长度为$H_a=32$的任务空间参考动作块，并附带闭爪事件预测和阶段分类分支。策略输出不是最终关节命令；下层MPC继续负责把参考转换为可执行的机器人运动。这一“学习规划器加确定性执行器”的划分使学习模型专注于动态拦截和抓取对齐，同时保留MPC对执行约束和运输阶段的处理能力。
 
-运行时，策略使用10步DDIM反向采样生成动作块，并通过时间集成平滑重叠动作块。策略输出的是任务空间参考，而不是最终关节命令；下层MPC继续负责把参考转换为可执行的机器人运动。这一“学习规划器加确定性执行器”的划分使学习模型专注于动态拦截和抓取对齐，同时保留MPC对执行约束和运输阶段的处理能力。
+本文评估四类模仿学习策略。BC使用前馈网络把历史观测和未来条件编码后直接回归动作块，作为最直接的监督学习基线。BC-RNN在编码和解码中加入GRU结构，用循环隐状态表示目标运动趋势和任务相位。ACT使用Transformer结构一次性预测动作块，强调长窗口条件和动作序列内部依赖。扩散策略采用条件扩散框架，训练时学习从带噪动作块恢复专家动作块，推理时使用10步DDIM反向采样，并通过时间集成平滑重叠动作块。四类策略共享目标中心化输入输出表示和下层MPC执行器，因此结果差异主要反映模型结构和动作块生成方式的影响。
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.95\textwidth]{fig_policy_architectures}
+    \bicaption{四类模仿学习策略的统一输入输出接口。}{Unified input-output interface for the four imitation-learning policies.}
+    \label{fig:policy-architectures}
+\end{figure}
+
+离散任务信号在运行时不是直接作为控制量使用，而是约束一个单调相位状态机。设阶段集合按任务顺序排列为
+\begin{equation}
+    \Phi=\{\mathrm{approach},\mathrm{dwell},\mathrm{close},\mathrm{hold},\mathrm{transport}\},
+    \label{eq:phase-set}
+\end{equation}
+并用整数索引$\phi_t\in\{0,\ldots,4\}$表示当前阶段。模型输出阶段概率$\hat{p}^\phi_t$和逐步闭爪概率$\hat{p}^c_{t,k}$后，运行时相位更新可概括为
+\begin{align}
+    c_t &= \mathbf{1}\left[\max_{0\leq k<H_a}\hat{p}^c_{t,k}>\gamma_c\right],\\
+    \phi_{t+1} &=
+    \begin{cases}
+        \max(\phi_t,\phi_{\mathrm{close}}), & c_t=1,\\
+        \min\left(\phi_t+1,\arg\max_j \hat{p}^\phi_{t,j}\right), & \arg\max_j \hat{p}^\phi_{t,j}>\phi_t,\\
+        \phi_t, & \text{otherwise}.
+    \end{cases}
+    \label{eq:phase-fsm}
+\end{align}
+该约束防止学习模型在闭环执行中发生阶段回退，例如从close重新跳回approach；同时允许close事件分支覆盖普通阶段分类，使夹爪闭合时机可以被单独监督。
+
+对于BC、BC-RNN和ACT，训练目标是监督动作块回归并同时预测离散任务信号。记数据集为$\mathcal{D}=\{(O_i,C_i,A_i^*,y_i^c,y_i^\phi)\}_{i=1}^{N}$，其中$y_i^c$为闭爪事件标签，$y_i^\phi$为任务阶段标签，确定性模仿策略的损失可写为
+\begin{align}
+    \mathcal{L}_{\mathrm{det}}(\theta)
+    &= \frac{1}{N}\sum_{i=1}^{N}
+    \left[
+        \frac{1}{H_a}\sum_{k=0}^{H_a-1}
+        \left\|\hat{a}_{i,k}-a^*_{i,k}\right\|_1
+        + \lambda_c\operatorname{BCE}(\hat{y}^c_i,y^c_i)
+        + \lambda_\phi\operatorname{CE}(\hat{y}^\phi_i,y^\phi_i)
+    \right].
+    \label{eq:deterministic-loss}
+\end{align}
+其中$\lambda_c$和$\lambda_\phi$分别控制闭爪事件和阶段分类的权重。使用$L_1$动作误差是为了降低少量异常动作标签对回归目标的影响。
+
+扩散策略使用同一动作标签$A_i^*$，但训练方式改为去噪生成。设$s$为扩散时间步，$\epsilon\sim\mathcal{N}(0,I)$，$\bar{\alpha}_s$为噪声调度的累积系数，前向加噪过程为
+\begin{equation}
+    A_{i,s}=\sqrt{\bar{\alpha}_s}A_i^*+\sqrt{1-\bar{\alpha}_s}\epsilon.
+    \label{eq:diffusion-forward}
+\end{equation}
+去噪网络$\epsilon_\theta$以$(A_{i,s},s,O_i,C_i)$为条件预测噪声，训练目标为
+\begin{align}
+    \mathcal{L}_{\mathrm{diff}}(\theta)
+    =\mathbb{E}_{i,s,\epsilon}\left[
+        \left\|\epsilon-\epsilon_\theta(A_{i,s},s,O_i,C_i)\right\|_2^2
+    \right]
+    +\lambda_c\operatorname{BCE}(\hat{y}^c_i,y^c_i)
+    +\lambda_\phi\operatorname{CE}(\hat{y}^\phi_i,y^\phi_i).
+    \label{eq:diffusion-loss}
+\end{align}
+因此，确定性方法直接学习条件均值附近的动作块，而扩散方法通过反向采样学习条件动作分布。二者在运行时都输出式~\eqref{eq:policy-map}中的任务空间动作块。
+
+推理时，扩散策略使用DDIM形式的确定性反向采样。给定当前噪声动作$A_s$和预测噪声$\epsilon_\theta(A_s,s,O,C)$，先估计干净动作块
+\begin{equation}
+    \hat{A}_0=\frac{A_s-\sqrt{1-\bar{\alpha}_s}\,
+    \epsilon_\theta(A_s,s,O,C)}{\sqrt{\bar{\alpha}_s}},
+    \label{eq:ddim-x0}
+\end{equation}
+再从时间步$s$更新到较小时间步$s'$：
+\begin{equation}
+    A_{s'}=\sqrt{\bar{\alpha}_{s'}}\hat{A}_0
+    +\sqrt{1-\bar{\alpha}_{s'}}\,\epsilon_\theta(A_s,s,O,C).
+    \label{eq:ddim-update}
+\end{equation}
+本文采用10步反向采样，因此单次重规划生成完整动作块，而不是逐步生成单步动作。
+
+由于相邻重规划会产生重叠动作块，本文采用指数权重时间集成。设最近若干次规划得到的动作块集合为$\{\hat{A}^{(m)}\}$，第$m$次规划中对应当前执行时刻的动作索引为$j_m$，则实际送入式~\eqref{eq:relative-action-decode}的相对动作是
+\begin{equation}
+    \bar{a}_t=
+    \frac{\sum_m \exp(-\beta j_m)\hat{a}^{(m)}_{j_m}}
+    {\sum_m \exp(-\beta j_m)},
+    \label{eq:temporal-ensemble}
+\end{equation}
+其中$\beta>0$为集成温度参数。该加权平均降低相邻动作块之间的不连续性，也是含噪高斯场景中扩散策略比直接观测MPC更稳定的一个机制。
 
 \section{训练与评估设置}
 
-中等任务策略由\path{config/dp_medium.yaml}统一描述。模型规模约为12.6M参数，训练目标包括动作噪声预测损失、close事件二分类损失和阶段分类损失。训练使用AdamW优化器、余弦学习率调度、指数滑动平均权重和自动混合精度。训练完成后的运行检查点为\path{checkpoints/diffusion_medium/best.pt}。在本文实验中，该检查点与\path{config/env_gt_medium.yaml}共同构成扩散策略的主要评估对象。
+四类学习策略使用相同训练集和验证集。确定性策略采用动作块回归、闭爪事件二分类和阶段分类的联合监督目标；扩散策略采用动作块去噪目标，并保留同样的事件和阶段辅助监督。优化过程使用AdamW、学习率预热与余弦衰减、指数滑动平均权重和自动混合精度。所有策略均根据验证集表现选择模型参数，并在闭环仿真中进行评估。
 
-本文比较两类策略。第一类为MPC专家，由\path{config/policy_expert.yaml}配置，代表直接使用当前观测和手工阶段逻辑的模型控制基线。第二类为扩散模仿策略，由\path{config/dp_medium.yaml}配置，运行检查点为\path{checkpoints/diffusion_medium/best.pt}。两类策略在相同环境变体上运行，每个配置使用200个评估回合和4个并行worker。
+本文把MPC专家作为算法示教源和模型控制参考，代表直接使用当前观测、几何规则和显式阶段逻辑的控制方法。四类模仿策略首先在真值完整场景上使用相同的200个评估回合进行比较。进一步地，真值运动分解矩阵以扩散策略作为学习策略代表，并与MPC专家比较平移、自旋及其耦合对闭环性能的影响；含噪观测矩阵则覆盖BC、BC-RNN、ACT和Diffusion四类学习策略，并与MPC专家进行对照。每个评估配置均独立运行200个回合，以二项成功率和过程指标报告结果。
 
-评估矩阵分为真值观测和含噪观测两部分。真值观测矩阵位于：
+评估矩阵分为真值观测和含噪观测两部分。真值观测矩阵包含完整任务以及$x$向平移、$y$向平移、平面平移、旋转、平移加旋转等分解场景。含噪矩阵包含轻度、中度、强度完整噪声，以及中度强度下的高斯、漂移、离群点、丢帧延迟等单项扰动。本文首先报告成功率，即成功回合数除以总回合数。若总回合数为$n$，成功回合数为$n_s$，则
+\begin{equation}
+    \hat{p}=\frac{n_s}{n}.
+    \label{eq:success-rate}
+\end{equation}
+二项成功率的95\% Wilson置信区间写为
+\begin{align}
+    \operatorname{CI}_{\mathrm{Wilson}}
+    =\frac{\hat{p}+\frac{z^2}{2n}}{1+\frac{z^2}{n}}
+    \pm
+    \frac{z}{1+\frac{z^2}{n}}
+    \sqrt{\frac{\hat{p}(1-\hat{p})}{n}+\frac{z^2}{4n^2}},\qquad z=1.96.
+    \label{eq:wilson-ci}
+\end{align}
 
-\begin{center}
-\path{config/thesis_eval/gt_medium}
-\end{center}
-
-该矩阵包含完整中等任务以及$x$向平移、$y$向平移、平面平移、旋转、平移加旋转等分解场景。含噪矩阵位于：
-
-\begin{center}
-\path{config/thesis_eval/noisy_medium}
-\end{center}
-
-该矩阵包含轻度、中度、强度完整噪声以及中等强度下的高斯、漂移、离群点、丢帧延迟等单项扰动。本文首先报告成功率，即成功回合数除以总回合数，并使用Wilson区间给出二项成功率的95\%置信区间。为避免只用成功率描述闭环行为，评估日志还记录最终末端到立方体距离、末端跟踪参考的平均误差、跟踪误差低于阈值的比例、末端轨迹二阶差分得到的平滑度指标、成功回合步数、归一化完成速度，以及完整闭环吞吐量。吞吐量以每秒仿真步数和相对$100\,\mathrm{Hz}$控制频率的实时倍率表示，只反映当前仿真和推理实现的整体运行速度，不等同于真实硬件实时控制能力。
+为避免只用成功率描述闭环行为，本文同时统计最终距离、跟踪误差、阈值内比例和平滑度等指标。对长度为$T$的回合，设末端位置为$p^e_t$，目标位置为$p^c_t$，任务空间参考位置为$p^r_t$，则最终距离和平均跟踪误差定义为
+\begin{align}
+    d_{\mathrm{final}} &= \left\|p^e_T-p^c_T\right\|_2, \\
+    e_{\mathrm{track}} &= \frac{1}{T}\sum_{t=1}^{T}\left\|p^e_t-p^r_t\right\|_2.
+    \label{eq:distance-tracking-metrics}
+\end{align}
+阈值内比例衡量跟踪误差低于容差$\delta$的时间比例：
+\begin{equation}
+    r_{\mathrm{tol}}=\frac{1}{T}\sum_{t=1}^{T}\mathbf{1}\left[\left\|p^e_t-p^r_t\right\|_2<\delta\right].
+    \label{eq:within-tolerance}
+\end{equation}
+平滑度使用末端轨迹二阶差分的均方根近似加速度强度：
+\begin{equation}
+    s_{\mathrm{rms}}
+    =\sqrt{\frac{1}{T-2}\sum_{t=1}^{T-2}
+    \left\|\frac{p^e_{t+2}-2p^e_{t+1}+p^e_t}{\Delta t^2}\right\|_2^2}.
+    \label{eq:smoothness-metric}
+\end{equation}
+此外，本文记录成功回合步数和归一化完成速度，用于区分“最终成功但完成较慢”的闭环行为。本文不把仿真执行吞吐量作为真实硬件实时性的证据；真实部署仍需单独评估策略推理、MPC求解和控制通信延迟。

@@ -1,105 +1,19 @@
-\chapter{可复现实验材料}
+\chapter{实验复现说明}
 
-\section{主要配置与文件}
+本文主体部分只报告与研究结论直接相关的任务定义、模型接口、训练目标和评估指标。为便于结果复核，本附录概述实验复现所需的关键条件；具体程序入口、文件索引和命令行参数可作为独立补充材料提供，不纳入正文论证。
 
-表~\ref{tab:artifact-summary}列出本文草稿中使用的主要材料。路径均相对于项目根目录。
+\section{数据与策略配置}
 
-\begin{table}[!htbp]
-        \bicaption{实验材料索引。}{Index of experimental artifacts.}
-        \label{tab:artifact-summary}
-        \centering
-        \small
-        \begin{tabular}{ll}
-                \hline
-                类型 & 路径或说明 \\
-                \hline
-                主环境配置 & \path{config/env_gt_medium.yaml} \\
-                扩散策略配置 & \path{config/dp_medium.yaml} \\
-                MPC专家配置 & \path{config/policy_expert.yaml} \\
-                原始专家数据 & \path{dataset/expert_medium} \\
-                编译扩散数据 & \path{dataset/compiled_diffusion_medium} \\
-                扩散策略检查点 & \path{checkpoints/diffusion_medium/best.pt} \\
-                真值评估矩阵配置 & \path{config/thesis_eval/gt_medium} \\
-                含噪评估矩阵配置 & \path{config/thesis_eval/noisy_medium} \\
-                成功率汇总 & \path{evalutation.md} \\
-                \hline
-        \end{tabular}
-\end{table}
+所有模仿学习策略使用相同的动态立方体抓取数据集。专家示教由有限状态机和MPC执行器生成，随后筛选成功轨迹并转换为目标中心化监督学习样本。历史观测窗口、动作块窗口和未来目标条件窗口分别取$H_o=16$、$H_a=32$和$H_c=50$，仿真步长为$0.01\,\mathrm{s}$。四类学习策略均使用相同的观测、条件和动作定义，以保证模型比较不受输入输出接口差异影响。
 
-\section{数据编译与训练命令}
+训练数据包含11909个成功回合、387931个训练窗口和43036个验证窗口。确定性策略使用动作块回归、闭爪事件预测和阶段分类的联合监督目标；扩散策略使用动作块去噪目标，并保留相同的离散任务信号监督。所有模型均根据验证集表现选择用于闭环评估的参数。
 
-中等任务扩散数据编译命令如下：
+\section{评估协议}
 
-\begin{verbatim}
-uv run --extra cuda -m src.policy.diffusion.compile \
-    --config config/dp_medium.yaml
-\end{verbatim}
+闭环评估在相同仿真任务和成功判定下进行。每个配置独立运行200个回合，并报告成功率、Wilson置信区间、最终距离、平均跟踪误差、阈值内比例、轨迹平滑度和成功步数等指标。真值观测矩阵包含完整运动、单轴平移、平面平移、纯旋转以及平移加旋转等场景；含噪矩阵包含完整组合噪声以及高斯、漂移、离群点、丢帧与延迟等单项扰动。含噪观测矩阵覆盖BC、BC-RNN、ACT和Diffusion四类学习策略，真值运动分解矩阵则以Diffusion作为学习策略代表。
 
-训练命令如下：
+MPC专家在评估中具有两重作用：一方面，它是生成示教数据的算法专家；另一方面，它作为直接使用当前观测和显式阶段逻辑的模型控制参考。学习策略与专家共享下层MPC执行器，因此评估中的差异主要来自任务空间参考动作块的生成方式。
 
-\begin{verbatim}
-uv run --extra cuda -m src.policy.diffusion.train \
-    --config config/dp_medium.yaml
-\end{verbatim}
+\section{报告与归档}
 
-如需从最近检查点恢复训练，可使用：
-
-\begin{verbatim}
-uv run --extra cuda -m src.policy.diffusion.train \
-    --config config/dp_medium.yaml \
-    --resume checkpoints/diffusion_medium/last.pt
-\end{verbatim}
-
-\section{评估与指标命令}
-
-本文定稿评估以\path{config/thesis_eval}下的环境矩阵为准。为避免评估进程之间竞争GPU、物理仿真或日志输出资源，本地复现实验一次只启动一个评估命令；单个命令内部可使用6个worker。扩散策略在真值完整中等环境上的评估命令如下：
-
-\begin{verbatim}
-python -m src.main eval \
-    --env-config config/thesis_eval/gt_medium/full.yaml \
-    --policy-config config/dp_medium.yaml \
-    --episodes 200 \
-    --workers 6 \
-    --param device=xpu \
-    --log-file logs/thesis_eval_gt_full_dp_medium_n200.jsonl
-\end{verbatim}
-
-含噪完整中等环境可替换环境配置运行：
-
-\begin{verbatim}
-python -m src.main eval \
-    --env-config config/thesis_eval/noisy_medium/full_moderate.yaml \
-    --policy-config config/dp_medium.yaml \
-    --episodes 200 \
-    --workers 6 \
-    --param device=xpu \
-    --log-file logs/thesis_eval_noisy_full_moderate_dp_medium_n200.jsonl
-\end{verbatim}
-
-若需要复现MPC专家基线，可将\texttt{--policy-config}替换为\path{config/policy_expert.yaml}。批量矩阵评估需要逐个遍历以下两组环境配置，且一次只运行一个评估命令：
-
-\begin{itemize}
-    \item 真值矩阵：\path{config/thesis_eval/gt_medium}
-    \item 含噪矩阵：\path{config/thesis_eval/noisy_medium}
-    \item 扩散策略：\path{config/dp_medium.yaml}
-    \item MPC专家：\path{config/policy_expert.yaml}
-\end{itemize}
-
-评估结束后，使用以下命令从JSONL日志中生成成功率、置信区间、最终距离、跟踪误差、平滑度、完成速度和吞吐量报告：
-
-\begin{verbatim}
-python -m src.eval.report \
-    logs/thesis_eval_gt_full_dp_medium_n200.jsonl
-\end{verbatim}
-
-本文用于补充过程指标的本地矩阵命令如下：
-
-\begin{verbatim}
-source .venv/bin/activate
-bash scripts/run_thesis_eval_matrix.sh
-
-python -m src.eval.report \
-    logs/thesis_eval_20260505_n200_dp_medium_xpu_w6/
-\end{verbatim}
-
-该脚本默认使用\texttt{EPISODES=200}、\texttt{WORKERS=6}、\texttt{DEVICE=xpu}和\path{config/dp_medium.yaml}，并把日志写入\path{logs/thesis_eval_20260505_n200_dp_medium_xpu_w6}。定稿前建议把每次运行的JSONL日志、命令行参数、git提交号和硬件信息一起归档。
+为保证实验可追溯性，完整复现实验应归档以下信息：任务和噪声参数、训练数据版本、模型超参数、随机种子、评估回合数、硬件与软件环境、策略参数快照以及逐回合评估记录。正文中的统计表由逐回合记录计算得到；若后续实验改变任务参数、噪声强度或评估回合数，应重新计算成功率和置信区间，而不应直接复用本文数值。
