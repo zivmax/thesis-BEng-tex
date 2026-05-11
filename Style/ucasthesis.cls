@@ -309,7 +309,7 @@
             \ucas@label@englishID & \ulenhance[1.2pt]{\ulextend{\ucas@value@ID}}\\
             \ucas@label@englishyear & \ulenhance[1.2pt]{\ulextend{\ucas@value@year}}\\
             \ucas@label@englishinstitute & \ulenhance[1.2pt]{\ulextend{\ucas@value@englishinstitute}}\\
-            \ucas@label@englishmajor & \ulenhance[1.2pt]{\ulextend{\ucas@value@major}}\\
+            \ucas@label@englishmajor & \ulenhance[1.2pt]{\ulextend{\ucas@value@englishmajor}}\\
             \ucas@label@englishadvisor & \ulenhance[1.2pt]{\ulextend{\ucas@value@englishadvisor}}\\
             % & \ulenhance[1.2pt]{\ulextend{\ucas@value@advisorsec}}\\
             % \ucas@label@degree & \ulenhance[1.2pt]{\ulextend{\ucas@value@degreetype\ucas@value@degree}}\\
@@ -334,12 +334,12 @@
 %---------------------------------------------------------------------------%
 \newcommand{\makedeclaration}{%
     \cleardoublepage
-    \thispagestyle{fancy}
+    \thispagestyle{empty}
     {
         \linespread{1.5}
         \zihao{-4}
 
-        \vspace*{2ex}
+        \vspace*{4ex}
 
         \begin{center}
             {\zihao{4}\bfseries\sffamily \ucas@value@declare@create}
@@ -347,13 +347,21 @@
 
         {\ucas@value@declare@creativity}
 
-        \vspace*{3ex}
+        \vspace*{8ex}
 
         {\hfill{} {\ucas@value@declare@s \hspace*{14em}}}
 
-        {\hfill{} {\ucas@value@declare@d \hspace*{14em}}}
+        \vspace*{2ex}
 
-        \vspace*{6ex}
+        {\hfill{} {\ucas@value@declare@d \hspace*{14em}}}
+    }
+    \clearpage
+    \thispagestyle{empty}
+    {
+        \linespread{1.5}
+        \zihao{-4}
+
+        \vspace*{4ex}
 
         \begin{center}
             {\zihao{4}\bfseries\sffamily \ucas@value@declare@right}
@@ -363,13 +371,17 @@
 
         {\ucas@value@declare@rule}
 
-        \vspace*{3ex}
+        \vspace*{4ex}
+
+        \noindent 公开方式：$\square$ 公开\qquad $\square$ 保密，保密期限：\uline{\hspace{6em}} 年
+
+        \vspace*{6ex}
 
         {\hfill{} {\ucas@value@declare@s \hspace*{10em} \ucas@value@declare@t \hspace*{9em}}}
 
-        {\hfill{} {\ucas@value@declare@d \hspace*{10em} \ucas@value@declare@d \hspace*{9em}}}
+        \vspace*{2ex}
 
-        \vspace*{3ex}
+        {\hfill{} {\ucas@value@declare@d \hspace*{10em} \ucas@value@declare@d \hspace*{9em}}}
     }
     \clearpage
     \if@twoside
@@ -453,4 +465,3 @@
 }
 %---------------------------------------------------------------------------%
 \endinput
-

@@ -7,7 +7,7 @@
 表~\ref{tab:imitation-baselines}给出了四类模仿学习策略在真值完整场景上的200回合结果。四种方法使用同一目标中心化数据表示、同一任务空间动作块接口和同一下层MPC执行器，因此该表主要反映不同学习模型结构对闭环任务的影响。
 
 \begin{table}[!htbp]
-    \bicaption{真值完整场景上的模仿学习策略比较。}{Imitation-policy comparison on the full ground-truth scene.}
+    \caption{真值完整场景上的模仿学习策略比较。}
     \label{tab:imitation-baselines}
     \centering
     \small
@@ -28,7 +28,7 @@
 \begin{figure}[!htbp]
     \centering
     \includegraphics[width=0.95\textwidth]{fig_imitation_baselines}
-    \bicaption{真值完整场景中四类模仿学习策略的闭环性能比较。}{Closed-loop comparison of four imitation-learning policies on the full ground-truth scene.}
+    \caption{真值完整场景中四类模仿学习策略的闭环性能比较。}
     \label{fig:imitation-baselines}
 \end{figure}
 
@@ -37,7 +37,7 @@
 表~\ref{tab:gt-results}给出了真值观测矩阵的200回合结果。基于表~\ref{tab:imitation-baselines}中的共同基准表现，本文以Diffusion作为学习策略代表，并与MPC专家参考进行比较。完整运动场景中，Diffusion成功173次，成功率为86.5\%；MPC专家成功190次，成功率为95.0\%。这表明在无观测噪声的主任务上，显式阶段逻辑和MPC执行仍具有更高上限，同时也为表~\ref{tab:imitation-baselines}中的各类模仿策略提供了专家参考。
 
 \begin{table}[!htbp]
-    \bicaption{真值观测矩阵成功率。}{Success rates on ground-truth variants.}
+    \caption{真值观测矩阵成功率。}
     \label{tab:gt-results}
     \centering
     \scriptsize
@@ -61,7 +61,7 @@
 \begin{figure}[!htbp]
     \centering
     \includegraphics[width=0.95\textwidth]{fig_gt_motion_matrix}
-    \bicaption{真值观测下运动分解场景的成功率比较。}{Success-rate comparison on ground-truth motion-decomposition scenes.}
+    \caption{真值观测下运动分解场景的成功率比较。}
     \label{fig:gt-motion-matrix}
 \end{figure}
 
@@ -70,7 +70,7 @@
 表~\ref{tab:noisy-results}给出了含噪观测矩阵结果。该矩阵将四类模仿学习策略与MPC专家置于相同扰动条件下比较，用于判断噪声鲁棒性来自具体生成式模型，还是来自目标中心化动作块接口和历史窗口本身。
 
 \begin{table}[!htbp]
-    \bicaption{含噪观测矩阵成功率。}{Success rates on noisy variants.}
+    \caption{含噪观测矩阵成功率。}
     \label{tab:noisy-results}
     \centering
     \scriptsize
@@ -96,7 +96,7 @@
 \begin{figure}[!htbp]
     \centering
     \includegraphics[width=0.95\textwidth]{fig_noisy_robustness}
-    \bicaption{含噪观测条件下学习策略与MPC专家的鲁棒性比较。}{Robustness comparison between learned policies and the MPC expert under noisy observations.}
+    \caption{含噪观测条件下学习策略与MPC专家的鲁棒性比较。}
     \label{fig:noisy-robustness}
 \end{figure}
 
@@ -105,7 +105,7 @@
 为补充成功率矩阵之外的闭环行为描述，本文进一步统计最终距离、跟踪误差、平滑度和成功步数等过程指标。这里选取Diffusion的代表性配置，结果见表~\ref{tab:aux-metrics}。
 
 \begin{table}[!htbp]
-    \bicaption{代表性闭环过程指标。}{Representative closed-loop process metrics.}
+    \caption{代表性闭环过程指标。}
     \label{tab:aux-metrics}
     \centering
     \scriptsize
@@ -130,7 +130,7 @@
 \begin{figure}[!htbp]
     \centering
     \includegraphics[width=0.95\textwidth]{fig_process_metrics}
-    \bicaption{代表性场景中的闭环过程指标分布。}{Distribution of closed-loop process metrics in representative scenes.}
+    \caption{代表性场景中的闭环过程指标分布。}
     \label{fig:process-metrics}
 \end{figure}
 
@@ -143,7 +143,7 @@
 \begin{figure}[!htbp]
     \centering
     \includegraphics[width=0.92\textwidth]{fig_failure_modes}
-    \bicaption{动态抓取中的代表性成功与失败模式。}{Representative success and failure modes in dynamic grasping.}
+    \caption{动态抓取中的代表性成功与失败模式。}
     \label{fig:failure-modes}
 \end{figure}
 
