@@ -1,12 +1,19 @@
 use File::Path qw(make_path);
 
-make_path('Tmp') unless -d 'Tmp';
+my $build_dir = 'Tmp';
+make_path($build_dir, "$build_dir/Tex");
 
-$aux_dir = 'Tmp';
-$out_dir = 'Tmp';
+@default_files = ('Thesis.tex');
 
 $pdf_mode = 5;
-$xelatex = 'xelatex -interaction=nonstopmode -halt-on-error -file-line-error %O %S';
+$aux_dir = $build_dir;
+$out_dir = $build_dir;
 
-$ENV{'TEXINPUTS'} = './Style//:' . ($ENV{'TEXINPUTS'} // '');
+$xelatex = 'xelatex -synctex=1 -interaction=nonstopmode -file-line-error %O %S';
+$biber = 'biber %O %B';
+$bibtex = 'bibtex %O %B';
+
+$ENV{'TEXINPUTS'} = './Style:./Tex:./Img:./Biblio:' . ($ENV{'TEXINPUTS'} // '');
+$ENV{'BIBINPUTS'} = './Biblio:' . ($ENV{'BIBINPUTS'} // '');
+$ENV{'BSTINPUTS'} = './Biblio:' . ($ENV{'BSTINPUTS'} // '');
 

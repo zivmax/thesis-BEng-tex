@@ -1,19 +1,311 @@
-\chapter{实验复现说明}
-
-本文主体部分只报告与研究结论直接相关的任务定义、模型接口、训练目标和评估指标。为便于结果复核，本附录概述实验复现所需的关键条件；具体程序入口、文件索引和命令行参数可作为独立补充材料提供，不纳入正文论证。
+\chapter{实验复现细节}
 
 \section{数据与策略配置}
 
 所有模仿学习策略使用相同的动态立方体抓取数据集。专家示教由有限状态机和MPC执行器生成，随后筛选成功轨迹并转换为目标中心化监督学习样本。历史观测窗口、动作块窗口和未来目标条件窗口分别取$H_o=16$、$H_a=32$和$H_c=50$，仿真步长为$0.01\,\mathrm{s}$。四类学习策略均使用相同的观测、条件和动作定义，以保证模型比较不受输入输出接口差异影响。
 
-训练数据包含11909个成功回合、387931个训练窗口和43036个验证窗口。确定性策略使用动作块回归、闭爪事件预测和阶段分类的联合监督目标；扩散策略使用动作块去噪目标，并保留相同的离散任务信号监督。所有模型均根据验证集表现选择用于闭环评估的参数。
+原始专家采集共包含12500个回合，其中11909个成功回合用于监督学习，591个未达到成功条件的回合被筛除，专家在该采集分布上的自失败率为4.7\%。筛除失败轨迹后，数据编译脚本使用随机种子42按专家回合划分训练集和验证集，验证比例为0.1；划分单位是完整专家回合，而不是从同一回合中混合切分窗口。最终编译数据包含387931个训练窗口和43036个验证窗口。由于失败专家轨迹只记录是否成功和回合长度，未保存结构化失败类别，本文不把这591个回合作为失败模式定量分析来源；它们主要说明算法专家不是完美示教器，也限制了学习策略可继承的专家覆盖范围。
+
+BC和BC-RNN使用动作块回归、闭爪事件预测和阶段分类的联合监督目标；ACT在此基础上增加KL散度正则化项；扩散策略使用动作块去噪目标，并保留相同的离散任务信号监督。所有模型均根据验证集表现选择用于闭环评估的参数。训练和运行时的主要参数列于表~\ref{tab:training-runtime-protocol}。
+
+\begin{table}[!htbp]
+    \caption{训练、检查点选择和运行时协议。}
+    \label{tab:training-runtime-protocol}
+    \centering
+    \scriptsize
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{lcccc}
+        \hline
+        项目 & BC & BC-RNN & ACT & Diffusion \\
+        \hline
+        训练epoch & 1500 & 1500 & 1500 & 1500 \\
+        学习率 & $2\times10^{-4}$ & $2\times10^{-4}$ & $2\times10^{-4}$ & $2\times10^{-4}$ \\
+        权重衰减 & $10^{-6}$ & $10^{-6}$ & $10^{-4}$ & $10^{-6}$ \\
+        warmup步数 & 300 & 300 & 1000 & 300 \\
+        梯度裁剪 & 1.0 & 1.0 & 1.0 & 1.0 \\
+        EMA衰减 & 0.999 & 0.999 & 0.999 & 0.999 \\
+        主训练损失 & $L_1$动作损失 & $L_1$动作损失 & $L_1$动作损失$+$KL散度 & 噪声预测损失 \\
+        动作/噪声、闭爪、阶段损失权重 & 1.0/5.0/1.0 & 1.0/5.0/1.0 & 1.0/5.0/1.0 & 1.0/5.0/1.0 \\
+        KL损失权重与预热步数 & --- & --- & 10.0$/\,$10000 & --- \\
+        验证选择准则 & 最低验证动作损失 & 最低验证动作损失 & 最低验证动作损失 & 最低验证噪声预测损失 \\
+        检查点 & \texttt{checkpoints/bc\_medium/best.pt} & \texttt{checkpoints/bcrnn\_medium/best.pt} & \texttt{checkpoints/act\_cvae\_medium/best.pt} & \texttt{checkpoints/diffusion\_medium/best.pt} \\
+        规划执行步数 & 16 & 16 & 16 & 16 \\
+        时间集成温度 & 0.5 & 0.5 & 0.5 & 0.5 \\
+        闭爪阈值 & 0.5 & 0.5 & 0.5 & 0.5 \\
+        \hline
+    \end{tabular}
+    }
+\end{table}
 
 \section{评估协议}
 
-闭环评估在相同仿真任务和成功判定下进行。每个配置独立运行200个回合，并报告成功率、Wilson置信区间、最终距离、平均跟踪误差、阈值内比例、轨迹平滑度和成功步数等指标。真值观测矩阵包含完整运动、单轴平移、平面平移、纯旋转以及平移加旋转等场景；含噪矩阵包含完整组合噪声以及高斯、漂移、离群点、丢帧与延迟等单项扰动。含噪观测矩阵覆盖BC、BC-RNN、ACT和Diffusion四类学习策略，真值运动分解矩阵则以Diffusion作为学习策略代表。
+闭环评估在相同仿真任务和成功判定下进行。真值完整场景比较运行750个回合以提高统计功效，运动分解矩阵和含噪观测矩阵各配置运行200个回合，并报告成功率、Wilson置信区间、最终距离、平均跟踪误差、阈值内比例、轨迹平滑度和成功步数等指标。真值观测矩阵包含完整运动、单轴平移、平面平移、纯旋转以及平移加旋转等场景；含噪矩阵包含完整组合噪声以及高斯、漂移、离群点、丢帧与延迟等单项扰动。真值运动分解矩阵和含噪观测矩阵均覆盖BC、BC-RNN、ACT和Diffusion四类学习策略。
 
-MPC专家在评估中具有两重作用：一方面，它是生成示教数据的算法专家；另一方面，它作为直接使用当前观测和显式阶段逻辑的模型控制参考。学习策略与专家共享下层MPC执行器，因此评估中的差异主要来自任务空间参考动作块的生成方式。
+每个评估回合的初始立方体状态由环境随机数生成器根据回合种子确定。单进程运行时第$i$个回合使用种子$s+i$；并行运行时，回合先均匀分配到多个worker，各worker使用相同的基准种子并加上$100000$的worker偏移，再在worker内部逐回合递增。本文矩阵评估均未显式传入\texttt{--seed}，因此基准种子为0；实际worker数量和对应种子列于表~\ref{tab:evaluation-worker-seeds}。使用相同worker数量的同一环境配置具有相同的200个初始状态种子，可进行逐种子配对复核；使用不同worker数量的结果仍来自相同参数化任务分布，但不按同一200个种子集合解释为严格配对比较。不同环境配置本身改变了运动或噪声参数，因此只在同一配置内解释这种配对关系。
+
+\begin{table}[!htbp]
+    \caption{矩阵评估的worker数量、回合分配和种子范围。}
+    \label{tab:evaluation-worker-seeds}
+    \centering
+    \scriptsize
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{p{0.20\textwidth}p{0.26\textwidth}cp{0.36\textwidth}}
+        \hline
+        结果来源 & 配置/脚本 & worker数 & 每个worker的回合数与种子范围 \\
+        \hline
+        Diffusion真值与含噪矩阵、FSM-MPC专家真值与含噪矩阵 & \texttt{scripts/run\_thesis\_eval\_matrix.sh}，\texttt{EPISODES=200}，\texttt{WORKERS=6} & 6 & worker 0--5的起始种子分别为0, 100000, 200000, 300000, 400000, 500000；回合数为34, 34, 33, 33, 33, 33；种子范围为0--33, 100000--100033, 200000--200032, 300000--300032, 400000--400032, 500000--500032。 \\
+        BC、BC-RNN、ACT真值运动分解矩阵 & \texttt{scripts/run\_thesis\_gt\_policy\_decomp\_matrix.sh}，\texttt{EPISODES=200}，\texttt{WORKERS=6} & 6 & 与6-worker配置相同：0--33, 100000--100033, 200000--200032, 300000--300032, 400000--400032, 500000--500032。 \\
+        BC含噪矩阵 & \texttt{scripts/run\_thesis\_noisy\_policy\_matrix.sh}，\texttt{EPISODES=200}，\texttt{WORKERS=6} & 6 & 与6-worker配置相同：0--33, 100000--100033, 200000--200032, 300000--300032, 400000--400032, 500000--500032。 \\
+        BC-RNN和ACT含噪矩阵 & \texttt{scripts/run\_thesis\_noisy\_policy\_matrix.sh}，\texttt{EPISODES=200}，\texttt{WORKERS=8} & 8 & worker 0--7的起始种子分别为0, 100000, 200000, 300000, 400000, 500000, 600000, 700000；每个worker运行25个回合；种子范围为0--24, 100000--100024, 200000--200024, 300000--300024, 400000--400024, 500000--500024, 600000--600024, 700000--700024。 \\
+        \hline
+    \end{tabular}
+    }
+\end{table}
+
+评估初始状态不是从训练数据文件中回放，而是从与训练采集相同的参数化分布中重新采样，包括位置范围$x\in[0.15,0.35]$、$y\in[-0.35,0.35]$、$z=0.25$，线速度范围$v_x,v_y\in[-0.075,0.075]\,\mathrm{m/s}$，以及$z$轴自旋角速度$15$至$30\,\mathrm{deg/s}$。因此，本文结果应解释为同分布闭环评估；它不构成按初始条件集合严格留出的泛化测试，也不覆盖正文未定义的速度、位置或噪声分布外情形。
+
+FSM-MPC专家在评估中具有两重作用：一方面，它是生成示教数据的算法专家；另一方面，它作为直接使用当前观测、显式阶段逻辑和几何参考构造的模型控制参考。学习策略与专家共享下层MPC执行器，因此评估中的差异主要来自任务空间参考动作块的生成方式。
 
 \section{报告与归档}
 
 为保证实验可追溯性，完整复现实验应归档以下信息：任务和噪声参数、训练数据版本、模型超参数、随机种子、评估回合数、硬件与软件环境、策略参数快照以及逐回合评估记录。正文中的统计表由逐回合记录计算得到；若后续实验改变任务参数、噪声强度或评估回合数，应重新计算成功率和置信区间，而不应直接复用本文数值。
+
+\chapter{控制延迟评估详细结果}
+\label{sec:appendix-latency}
+
+正文第~\ref{sec:control-latency}~节概述了控制延迟评估的核心结论。本附录给出完整测试方法、Ryzen 5 8400F测量数据、控制更新频率消融和多硬件对比结果。
+
+\section{延迟与推理评估硬件}
+
+闭环控制延迟评估分为三个层级。策略规划延迟在Ryzen 5 8400F和Jetson Orin Nano上使用固定输入基准测量；MPC求解延迟仅在Ryzen 5 8400F上测量（纯数值优化，不涉及GPU）；闭环控制器延迟在Ryzen 5 8400F和Intel Arc B580上使用完整闭环仿真测量。嵌入式端Jetson Orin Nano仅补充策略规划层级的计算性能测试，不包含仿真环境、MPC求解或机器人硬件I/O。由于Jetson测试分别包含ONNX Runtime CPU后端和PyTorch CUDA后端，表~\ref{tab:hardware-specs}将Jetson Orin Nano的CPU和GPU计算资源分开列出。表中仅保留与本文推理延迟直接相关的芯片、频率、计算单元和峰值AI计算指标；规格参数来自AMD、Intel和NVIDIA官方产品页及Jetson Linux开发者文档\citep{amd8400f,intelb580,nvidiaorinano,nvidiaorinano_clocks}。
+
+\begin{table}[!htbp]
+    \caption{延迟与推理评估硬件规格。}
+    \label{tab:hardware-specs}
+    \centering
+    \scriptsize
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{p{0.23\textwidth}p{0.20\textwidth}p{0.25\textwidth}p{0.22\textwidth}}
+        \hline
+        硬件 & 测试用途 & 芯片/计算单元 & 频率与峰值计算 \\
+        \hline
+        Ryzen 5 8400F & 策略规划/MPC/控制器延迟 & 6核12线程CPU & 基础$4.2\,\mathrm{GHz}$，最大加速$4.7\,\mathrm{GHz}$ \\
+        Intel Arc B580 & 闭环控制器延迟 & 20 Xe-core，160 XMX引擎 & 图形频率$2670\,\mathrm{MHz}$，INT8峰值$233\,\mathrm{TOPS}$ \\
+        Jetson Orin Nano CPU & ONNX Runtime CPU策略规划 & 6核Arm Cortex-A78AE CPU & 最高约$1.5\,\mathrm{GHz}$ \\
+        Jetson Orin Nano GPU & PyTorch CUDA策略规划 & 1024个CUDA核心，32个Tensor Core & GPU最高约$625\,\mathrm{MHz}$，AI性能最高$40\,\mathrm{TOPS}$ \\
+        \hline
+    \end{tabular}
+    }
+\end{table}
+
+\section{测试方法}
+
+策略规划测试不启动仿真环境，在固定形状的目标中心化历史观测和未来条件输入上测量单次规划耗时（单次前向传播；Diffusion为10步DDIM采样）。计时前后同步Torch设备，200次迭代（Diffusion 50次），记录均值和p95。所有策略均采用16步动作块执行窗口（规划一次执行16步）。
+
+MPC测试在随机采样的关节构型和末端目标上独立调用求解器，采用与控制器配置一致的10步预测时域、位置权重300、姿态权重50、平滑权重5和最大100次内部迭代。每项测试包含25次预热调用和200次计时调用，启用热启动，记录求解耗时、收敛率和内部迭代次数。MPC在每个控制步均执行，且均在CPU侧运行，与加速设备无关。
+
+闭环控制器在真值完整场景中运行5个回合（排除前16个预热步），每步包括观测构造、策略规划或缓存读取、相位更新、动作解码和MPC命令生成。控制器耗时 $\approx$ 策略规划$/\,16$ $+$ MPC $+$ Python控制开销（实测1--4 ms）。Ryzen 5 8400F运行完整闭环；Intel Arc B580和Jetson Orin Nano的闭环结果见第~\ref{subsec:multi-hardware}~小节。
+
+\section{Ryzen 5 8400F结果}
+
+\begin{table}[!htbp]
+    \caption{策略规划延迟（单次规划耗时，mean~/ p95，ms）。Ryzen 5 8400F上测量。BC、BC-RNN、ACT为单次前向传播；Diffusion为10步DDIM采样。所有值均未做执行窗口均摊。}
+    \label{tab:planning-latency}
+    \centering
+    \small
+    \begin{tabular}{lcccc}
+        \hline
+        硬件 & BC & BC-RNN & ACT & Diffusion$^\dagger$ \\
+        \hline
+        Ryzen 5 8400F & 0.91~/ 1.32 & 7.78~/ 8.95 & 7.33~/ 9.19 & 117.17~/ 127.00 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[!htbp]
+    \caption{MPC求解延迟（单次求解耗时，mean~/ p95，ms）。Ryzen 5 8400F上测量，10步预测时域，25次预热和200次计时调用，启用热启动。}
+    \label{tab:mpc-latency}
+    \centering
+    \small
+    \begin{tabular}{lcc}
+        \hline
+        硬件 & 抓取MPC & 运输MPC \\
+        \hline
+        Ryzen 5 8400F & 13.22~/ 16.37 & 14.47~/ 19.50 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[!htbp]
+    \caption{等效控制频率（Hz）。Ryzen 5 8400F闭环实测值；Diffusion按16步执行窗口均摊。}
+    \label{tab:control-frequency}
+    \centering
+    \small
+    \begin{tabular}{lcccc}
+        \hline
+        硬件 & BC & BC-RNN & ACT & Diffusion$^\dagger$ \\
+        \hline
+        Ryzen 5 8400F & 69.5 & 67.6 & 69.3 & 52.3 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+策略网络推理开销很低：BC仅0.91 ms，BC-RNN和ACT在7--8 ms。Diffusion的117 ms均摊至16步窗口后等效7.32 ms/步，仍在$10\,\mathrm{ms}$预算以内。MPC求解是实时控制的主要瓶颈：抓取和运输MPC分别需13.22 ms和14.47 ms，均已超过$10\,\mathrm{ms}$仿真步长；收敛率均为100\%，抓取MPC平均内部迭代8.86次，运输MPC平均内部迭代9.68次。完整控制器每步耗时14--19 ms，尚未满足100 Hz严格步同步要求。瓶颈不在策略网络（均摊后0.06--7.32 ms/步），而在MPC求解（约13--15 ms/次）和Python控制开销。
+
+\section{控制更新频率消融}
+
+为避免把100 Hz步同步判据误解为当前任务的唯一实时性要求，本文进一步对FSM-MPC专家进行控制更新频率消融。实验保持仿真步长为$0.01\,\mathrm{s}$，但只允许控制器每$N$个仿真步重新计算一次动作，其余步采用上一动作的零阶保持。
+
+\begin{table}[!htbp]
+    \caption{FSM-MPC专家在不同受限控制更新频率下的成功率（50回合）。}
+    \label{tab:control-frequency-sweep}
+    \centering
+    \small
+    \begin{tabular}{lcccccccc}
+        \hline
+        更新频率 & 100 & 50 & 33.3 & 25 & 20 & 16.7 & 12.5 & 10 \\
+        \hline
+        成功率 & 96.0\% & 94.0\% & 94.0\% & 94.0\% & 88.0\% & 94.0\% & 70.0\% & 62.0\% \\
+        成功数 & 48/50 & 47/50 & 47/50 & 47/50 & 44/50 & 47/50 & 35/50 & 31/50 \\
+        95\%区间下界 & 86.5\% & 83.8\% & 83.8\% & 83.8\% & 76.2\% & 83.8\% & 56.2\% & 48.2\% \\
+        95\%区间上界 & 98.9\% & 97.9\% & 97.9\% & 97.9\% & 94.4\% & 97.9\% & 80.9\% & 74.1\% \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.82\textwidth]{fig_control_frequency_sweep}
+    \caption{FSM-MPC专家在受限控制更新频率下的成功率。仿真仍以$0.01\,\mathrm{s}$步长推进，控制器仅按横轴频率更新，其余步保持上一动作。阴影表示Wilson 95\%置信区间。}
+    \label{fig:control-frequency-sweep}
+\end{figure}
+
+结果显示，100 Hz、50 Hz、33.3 Hz和25 Hz四个频率下成功率均为94\%--96\%，差异落在50回合二项不确定性内；当更新频率降低到12.5 Hz和10 Hz时，成功率分别下降到70.0\%和62.0\%。这说明，在本文设置的立方体最大线速度$0.075\,\mathrm{m/s}$和最大角速度$30\,\mathrm{deg/s}$下，当前任务对高层控制更新频率的经验阈值约在20 Hz以下开始出现显著退化，明显低于严格100 Hz步同步判据。该结论只说明当前仿真任务在零阶保持下对控制更新频率具有一定容忍度，不能外推到更高速目标或真实硬件延迟。
+
+从严格步同步角度看，当前完整控制器仍未达到100 Hz；从任务频率消融角度看，Ryzen实测52--69 Hz控制频率高于25 Hz经验稳定区间，因此对本文动态立方体任务具有足够更新裕量。提升控制频率的优先方向为：缩短MPC预测时域或降低迭代上限、将QP求解器编译为C++、降低Python调度开销。
+
+\section{多硬件对比}
+\label{subsec:multi-hardware}
+
+Intel Arc B580和Jetson Orin Nano上的完整测量结果列于以下三表。
+
+\begin{table}[!htbp]
+    \caption{策略规划延迟——完整多硬件结果（单次规划耗时，mean~/ p95，ms）。}
+    \label{tab:planning-latency-all}
+    \centering
+    \small
+    \begin{tabular}{lcccc}
+        \hline
+        硬件 & BC & BC-RNN & ACT & Diffusion$^\dagger$ \\
+        \hline
+        Ryzen 5 8400F & 0.91~/ 1.32 & 7.78~/ 8.95 & 7.33~/ 9.19 & 117.17~/ 127.00 \\
+        Intel Arc B580 & 2.21~/ 2.97 & 10.57~/ 12.11 & 7.38~/ 8.52 & 73.78~/ 83.55 \\
+        Jetson Orin Nano CUDA & 3.95~/ 3.98 & 6.60~/ 8.86 & 11.11~/ 11.28 & 148.45~/ 149.32 \\
+        Jetson Orin Nano ONNX CPU & 1.83~/ 1.87 & 6.11~/ 6.21 & 15.04~/ 15.25 & 89.43~/ 103.48 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[!htbp]
+    \caption{MPC求解延迟——完整多硬件结果（单次求解耗时，mean~/ p95，ms）。}
+    \label{tab:mpc-latency-all}
+    \centering
+    \small
+    \begin{tabular}{lcc}
+        \hline
+        硬件 & 抓取MPC & 运输MPC \\
+        \hline
+        Ryzen 5 8400F & 13.22~/ 16.37 & 14.47~/ 19.50 \\
+        Jetson Orin Nano CPU & 32.39~/ 39.29 & 35.29~/ 47.15 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[!htbp]
+    \caption{等效控制频率——完整多硬件结果（Hz）。Ryzen和Arc B580为闭环实测值；Jetson为估算值（$1000\,/\,($策略规划$/\,16+$ 抓取MPC $+3.0)$）。Diffusion按16步执行窗口均摊。}
+    \label{tab:control-frequency-all}
+    \centering
+    \small
+    \begin{tabular}{lcccc}
+        \hline
+        硬件 & BC & BC-RNN & ACT & Diffusion$^\dagger$ \\
+        \hline
+        Ryzen 5 8400F & 69.5 & 67.6 & 69.3 & 52.3 \\
+        Intel Arc B580 & 65.9 & 66.8 & 66.8 & 54.6 \\
+        Jetson Orin Nano CUDA & $\approx$28.1 & $\approx$27.9 & $\approx$27.7 & $\approx$22.4 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+多硬件对比的主要观察：(1) Intel Arc B580上轻量模型（BC）因设备同步开销反比CPU慢（2.21 对比 0.91 ms），但扩散模型在XPU上比CPU快约37\%（73.78 对比 117.17 ms）；(2) B580闭环控制器频率与Ryzen接近（差值在4 Hz以内），因为MPC和Python开销均在CPU侧；(3) Jetson Orin Nano上BC和BC-RNN的CUDA推理满足$10\,\mathrm{ms}$预算，MPC求解（约32--35 ms/次）是嵌入式实时化的首要障碍，估算控制频率仅22--28 Hz；(4) 板端ONNX Runtime仅提供CPUExecutionProvider，ONNX CPU结果仅作为导出参考，不能作为GPU加速结论。
+
+\chapter{补充实验结果}
+
+\section{完整成功率矩阵}
+
+正文使用热力图展示矩阵结果，以突出不同运动和噪声条件下的结构性差异；本附录保留相同结果的完整数值表，便于复核具体配置。
+
+\begin{table}[!htbp]
+    \caption{真值观测矩阵成功率。}
+    \label{tab:gt-results}
+    \centering
+    \scriptsize
+    \begin{tabular}{lccccc}
+        \hline
+        运动场景 & BC & BC-RNN & ACT & Diffusion & FSM-MPC专家 \\
+        \hline
+        Full & 86.0\% & 86.3\% & 86.4\% & 87.2\% & 97.1\% \\
+        X translation only & 94.0\% & 94.5\% & 93.5\% & 92.5\% & 96.5\% \\
+        Y translation only & 96.0\% & 99.0\% & 99.5\% & 99.0\% & 100.0\% \\
+        XY translation only & 91.5\% & 97.0\% & 97.5\% & 93.0\% & 95.5\% \\
+        Rotation only & 99.0\% & 100.0\% & 100.0\% & 100.0\% & 100.0\% \\
+        X + rotation & 92.0\% & 91.5\% & 93.0\% & 92.5\% & 94.5\% \\
+        Y + rotation & 92.0\% & 90.5\% & 95.0\% & 94.5\% & 99.0\% \\
+        \hline
+        \multicolumn{6}{p{0.95\textwidth}}{\scriptsize Full行来自750回合评估（见表~\ref{tab:imitation-baselines}）。其余行和其余矩阵均为200回合评估。} \\
+    \end{tabular}
+\end{table}
+
+\begin{table}[!htbp]
+    \caption{含噪观测矩阵成功率。}
+    \label{tab:noisy-results}
+    \centering
+    \scriptsize
+    \begin{tabular}{lccccc}
+        \hline
+        噪声条件 & BC & BC-RNN & ACT & Diffusion & 未滤波FSM-MPC \\
+        \hline
+        Full mild & 54.0\% & 65.0\% & 70.0\% & 70.0\% & 84.0\% \\
+        Full moderate & 33.0\% & 51.0\% & 56.0\% & 58.0\% & 2.5\% \\
+        Full strong & 15.0\% & 27.5\% & 32.5\% & 25.0\% & 0.0\% \\
+        Gaussian only, moderate & 58.5\% & 62.5\% & 69.0\% & 67.5\% & 2.5\% \\
+        Drift only, moderate & 70.5\% & 71.0\% & 73.0\% & 78.5\% & 93.5\% \\
+        Outlier only, moderate & 64.5\% & 82.0\% & 84.5\% & 75.0\% & 95.0\% \\
+        Dropout + latency, moderate & 83.5\% & 83.0\% & 88.0\% & 85.0\% & 95.5\% \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\section{真值运动分解详细讨论}
+\label{sec:gt-decomposition-detail}
+
+正文第~\ref{sec:gt-evaluation}~节概述了真值运动分解矩阵的核心结论；本节补充分策略、分场景的详细讨论，完整数值见表~\ref{tab:gt-results}。
+
+纯旋转场景中除BC为99.0\%外，其余策略均达到100.0\%成功率，说明在固定中心附近处理目标自旋并不是当前任务的主要瓶颈——所有策略都能稳定对齐绕$z$轴自旋的立方体。
+
+单轴平移场景（$x$向或$y$向）中，各策略均表现良好，最优学习策略与FSM-MPC专家的差距不超过2个百分点：$x$向平移中BC-RNN为94.5\%（专家96.5\%），$y$向平移中ACT为99.5\%（专家100.0\%）。平面平移（$xy$向）中，BC-RNN和ACT分别达到97.0\%和97.5\%，高于BC的91.5\%和Diffusion的93.0\%，说明循环结构和Transformer注意力在处理双轴平移时的目标运动估计上具有一定优势。
+
+组合平移加旋转场景中，策略间的排序发生变化。$x$向平移加旋转下各策略集中在91.5\%--93.0\%，差异很小；$y$向平移加旋转下ACT达到95.0\%，明显高于BC-RNN的90.5\%和BC的92.0\%，且与Diffusion的94.5\%接近。该差异可能来自$y$向平移与绕$z$轴旋转耦合时，末端执行器需要同时调整横向位置和抓取朝向，ACT的跨注意力条件编码在该情况下提供了更准确的动作块预测。
+
+完整多自由度场景（$xy$平移$+$旋转）是差距最大的配置：最佳学习策略Diffusion（87.2\%）低于FSM-MPC专家（97.1\%）9.9个百分点。而分解场景中除完整场景外最大差距仅4.5个百分点（$y$向平移加旋转中ACT 95.0\% 对比专家99.0\%）。这一对比说明，当平移和旋转在$xy$平面内自由耦合时，目标运动的组合复杂度和闭爪时机的判断难度显著上升，专家状态机的显式阶段逻辑和几何规则在此情况下具有结构性优势。
+
+整体来看，目标中心化动作块接口使BC、BC-RNN、ACT和Diffusion都能处理各类分解运动因素；在单因素或双因素组合场景中，多种学习策略已接近专家水平；完整耦合任务仍更依赖稳定的阶段判断和精确的闭爪时机，这是当前学习策略与FSM-MPC专家的主要差距来源。
+
+\section{训练收敛曲线}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.92\textwidth]{fig_loss_history}
+    \caption{四类模仿学习策略的训练与验证损失曲线。BC、BC-RNN和ACT报告动作$L_1$损失，Diffusion报告噪声预测MSE损失；损失数值不可跨模型类型直接比较，仅作为各模型独立收敛的优化诊断参考。}
+    \label{fig:loss-history}
+\end{figure}
