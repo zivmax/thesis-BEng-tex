@@ -4,12 +4,13 @@
 %-                                                                         -%
 %---------------------------------------------------------------------------%
 
-@article{pomerleau1989alvinn,
-  author  = {Pomerleau, Dean A.},
-  title   = {{ALVINN}: An Autonomous Land Vehicle in a Neural Network},
-  journal = {Advances in Neural Information Processing Systems},
-  year    = {1989},
-  volume  = {1},
+@inproceedings{pomerleau1989alvinn,
+  author    = {Pomerleau, Dean A.},
+  title     = {{ALVINN}: An Autonomous Land Vehicle in a Neural Network},
+  booktitle = {Advances in Neural Information Processing Systems},
+  year      = {1989},
+  volume    = {1},
+  pages     = {305--313},
 }
 
 @article{argall2009survey,
@@ -20,6 +21,7 @@
   volume  = {57},
   number  = {5},
   pages   = {469--483},
+  doi     = {10.1016/j.robot.2008.10.024},
 }
 
 @inproceedings{ross2010efficient,
@@ -48,21 +50,25 @@
 @inproceedings{florence2022implicit,
   author    = {Florence, Pete and Lynch, Corey and Zeng, Andy and Ramirez, Oscar A. and Wahid, Ayzaan and Downs, Laura and Wong, Adrian and Lee, Johnny and Mordatch, Igor and Tompson, Jonathan},
   title     = {Implicit Behavioral Cloning},
-  booktitle = {Conference on Robot Learning},
+  booktitle = {Proceedings of the 5th Conference on Robot Learning},
   year      = {2022},
+  volume    = {164},
+  series    = {Proceedings of Machine Learning Research},
   pages     = {158--168},
 }
 
 @inproceedings{mandlekar2021matters,
   author    = {Mandlekar, Ajay and Xu, Danfei and Wong, Josiah and Nasiriany, Soroush and Wang, Chen and Kulkarni, Rohun and Fei-Fei, Li and Savarese, Silvio and Zhu, Yuke and Mart{\'i}n-Mart{\'i}n, Roberto},
   title     = {What Matters in Learning from Offline Human Demonstrations for Robot Manipulation},
-  booktitle = {Conference on Robot Learning},
-  year      = {2021},
+  booktitle = {Proceedings of the 5th Conference on Robot Learning},
+  year      = {2022},
+  volume    = {164},
+  series    = {Proceedings of Machine Learning Research},
   pages     = {1678--1690},
 }
 
 @inproceedings{lynch2020learning,
-  author    = {Lynch, Corey and Sermanet, Pierre},
+  author    = {Lynch, Corey and Khansari, Mohi and Xiao, Ted and Kumar, Vikash and Tompson, Jonathan and Levine, Sergey and Sermanet, Pierre},
   title     = {Learning Latent Plans from Play},
   booktitle = {Proceedings of the 3rd Conference on Robot Learning},
   year      = {2020},
@@ -72,11 +78,12 @@
 }
 
 @inproceedings{mandlekar2020iris,
-  author    = {Mandlekar, Ajay and Xu, Danfei and Mart{\'i}n-Mart{\'i}n, Roberto and Savarese, Silvio and Fei-Fei, Li},
+  author    = {Mandlekar, Ajay and Ramos, Fabio and Boots, Byron and Savarese, Silvio and Fei-Fei, Li and Garg, Animesh and Fox, Dieter},
   title     = {{IRIS}: Implicit Reinforcement without Interaction at Scale for Learning Control from Offline Robot Manipulation Data},
   booktitle = {IEEE International Conference on Robotics and Automation},
   year      = {2020},
   pages     = {4414--4420},
+  doi       = {10.1109/ICRA40945.2020.9196935},
 }
 
 @inproceedings{wang2023mimicplay,
@@ -117,26 +124,31 @@
   title     = {Learning Fine-Grained Bimanual Manipulation with Low-Cost Hardware},
   booktitle = {Robotics: Science and Systems},
   year      = {2023},
+  doi       = {10.15607/RSS.2023.XIX.016},
 }
 
-@article{zeng2021transporter,
-  author  = {Zeng, Andy and Florence, Pete and Tompson, Jonathan and Welker, Stefan and Chien, Jonathan and Attarian, Maria and Armstrong, Travis and Krasin, Ivan and Duong, Dan and Sindhwani, Vikas and Lee, Johnny},
-  title   = {Transporter Networks: Rearranging the Visual World for Robotic Manipulation},
-  journal = {Conference on Robot Learning},
-  year    = {2021},
-  pages   = {726--747},
+@inproceedings{zeng2021transporter,
+  author    = {Zeng, Andy and Florence, Pete and Tompson, Jonathan and Welker, Stefan and Chien, Jonathan and Attarian, Maria and Armstrong, Travis and Krasin, Ivan and Duong, Dan and Sindhwani, Vikas and Lee, Johnny},
+  title     = {Transporter Networks: Rearranging the Visual World for Robotic Manipulation},
+  booktitle = {Proceedings of the 2020 Conference on Robot Learning},
+  year      = {2021},
+  volume    = {155},
+  series    = {Proceedings of Machine Learning Research},
+  pages     = {726--747},
 }
 
 @inproceedings{chi2024universal,
-  author    = {Chi, Cheng and Xu, Zhenjia and Feng, Siyuan and Cousineau, Eric and Du, Yilun and Burchfiel, Benjamin and Tedrake, Russ and Song, Shuran},
+  author    = {Chi, Cheng and Xu, Zhenjia and Pan, Chuer and Cousineau, Eric and Burchfiel, Benjamin and Feng, Siyuan and Tedrake, Russ and Song, Shuran},
   title     = {Universal Manipulation Interface: In-The-Wild Robot Teaching Without In-The-Wild Robots},
   booktitle = {Robotics: Science and Systems},
   year      = {2024},
+  doi       = {10.15607/RSS.2024.XX.045},
 }
 
 @book{rawlings2017model,
   author    = {Rawlings, James B. and Mayne, David Q. and Diehl, Moritz M.},
   title     = {Model Predictive Control: Theory, Computation, and Design},
+  edition   = {2nd},
   publisher = {Nob Hill Publishing},
   year      = {2017},
 }
@@ -147,6 +159,17 @@
 
 
 
+
+@article{nubert2020safe,
+  author    = {Nubert, Julian and K{\"o}hler, Johannes and Berenz, Vincent and Allg{\"o}wer, Frank and Trimpe, Sebastian},
+  title     = {Safe and Fast Tracking on a Robot Manipulator: Robust {MPC} and Neural Network Control},
+  journal   = {IEEE Robotics and Automation Letters},
+  year      = {2020},
+  volume    = {5},
+  number    = {2},
+  pages     = {3050--3057},
+  doi       = {10.1109/LRA.2020.2975727},
+}
 
 @inproceedings{kayalibay2023filteraware,
   author    = {Kayalibay, Baris and Mirchev, Atanas and Agha, Ahmed and van der Smagt, Patrick and Bayer, Justin},
@@ -167,7 +190,7 @@
   pages     = {6840--6851},
 }
 
-@inproceedings{song2020denoising,
+@inproceedings{song2021denoising,
   author    = {Song, Jiaming and Meng, Chenlin and Ermon, Stefano},
   title     = {Denoising Diffusion Implicit Models},
   booktitle = {International Conference on Learning Representations},
@@ -175,27 +198,29 @@
 }
 
 @inproceedings{chi2023diffusion,
-  author    = {Chi, Cheng and Feng, Siyuan and Du, Yilun and Xu, Zhenjia and Cousineau, Eric and Burchfiel, Benjamin and Song, Shuran},
+  author    = {Chi, Cheng and Xu, Zhenjia and Feng, Siyuan and Cousineau, Eric and Du, Yilun and Burchfiel, Benjamin and Tedrake, Russ and Song, Shuran},
   title     = {Diffusion Policy: Visuomotor Policy Learning via Action Diffusion},
   booktitle = {Robotics: Science and Systems},
   year      = {2023},
+  doi       = {10.15607/RSS.2023.XIX.026},
 }
 
 @article{zhang2022robotic,
-  author  = {Zhang, Hanbo and Zhou, Xuguang and Lan, Xuguang and Fan, Yifeng and Tian, Zhiqiang and Zhang, Nanning},
+  author  = {Zhang, Hanbo and Tang, Jian and Sun, Shiguang and Lan, Xuguang},
   title   = {Robotic Grasping from Classical to Modern: A Survey},
   journal = {arXiv preprint arXiv:2202.03631},
   year    = {2022},
 }
 
 @article{newbury2023deep,
-  author  = {Newbury, Rhys and Gu, Morris and Chumbley, Liam and Mousavian, Arsalan and Eppner, Clemens and Leitner, J{\"u}rgen and Bohg, Jeannette and Morales, Antonio and Asfour, Tamim and Kragic, Danica and Fox, Dieter and Cosgun, Akansel},
+  author  = {Newbury, Rhys and Gu, Morris and Chumbley, Lachlan and Mousavian, Arsalan and Eppner, Clemens and Leitner, J{\"u}rgen and Bohg, Jeannette and Morales, Antonio and Asfour, Tamim and Kragic, Danica and Fox, Dieter and Cosgun, Akansel},
   title   = {Deep Learning Approaches to Grasp Synthesis: A Review},
   journal = {IEEE Transactions on Robotics},
   year    = {2023},
   volume  = {39},
   number  = {5},
   pages   = {3994--4015},
+  doi     = {10.1109/TRO.2023.3280597},
 }
 
 @article{marturi2019dynamic,
@@ -214,8 +239,8 @@
   journal = {Robotics and Autonomous Systems},
   year    = {2022},
   volume  = {152},
-  pages   = {104068},
-  doi     = {10.1016/j.robot.2022.104068},
+  pages   = {104041},
+  doi     = {10.1016/j.robot.2022.104041},
 }
 
 @article{he2026dynamicgrasping,
@@ -254,6 +279,88 @@
   volume  = {16},
   number  = {2},
   pages   = {101--133},
+  doi     = {10.1214/ss/1009213286},
+}
+
+@misc{genesis2024,
+  author  = {{Genesis Authors}},
+  title   = {Genesis: A Generative and Universal Physics Engine for Robotics and Beyond},
+  year    = {2024},
+  month   = {12},
+  url     = {https://github.com/Genesis-Embodied-AI/Genesis},
+  urldate = {2026-05-15},
+}
+
+@online{franka2026research3,
+  author  = {{Franka Robotics}},
+  title   = {{Franka Research 3}},
+  url     = {https://franka.de/products/franka-research-3},
+  urldate = {2026-05-15},
+}
+
+@online{franka2026hand,
+  author  = {{Franka Robotics}},
+  title   = {{Franka Hand}},
+  url     = {https://franka.de/franka-hand},
+  urldate = {2026-05-15},
+}
+
+@article{kalman1960new,
+  author  = {Kalman, R. E.},
+  title   = {A New Approach to Linear Filtering and Prediction Problems},
+  journal = {Journal of Basic Engineering},
+  year    = {1960},
+  volume  = {82},
+  number  = {1},
+  pages   = {35--45},
+  doi     = {10.1115/1.3662552},
+}
+
+@article{shoemake1985animating,
+  author  = {Shoemake, Ken},
+  title   = {Animating Rotation with Quaternion Curves},
+  journal = {ACM SIGGRAPH Computer Graphics},
+  year    = {1985},
+  volume  = {19},
+  number  = {3},
+  pages   = {245--254},
+  doi     = {10.1145/325165.325242},
+}
+
+@article{mcnemar1947note,
+  author  = {McNemar, Quinn},
+  title   = {Note on the Sampling Error of the Difference Between Correlated Proportions or Percentages},
+  journal = {Psychometrika},
+  year    = {1947},
+  volume  = {12},
+  number  = {2},
+  pages   = {153--157},
+  doi     = {10.1007/BF02295996},
+}
+
+@inproceedings{kingma2014autoencoding,
+  author    = {Kingma, Diederik P. and Welling, Max},
+  title     = {Auto-Encoding Variational Bayes},
+  booktitle = {International Conference on Learning Representations},
+  year      = {2014},
+}
+
+@inproceedings{sohn2015learning,
+  author    = {Sohn, Kihyuk and Lee, Honglak and Yan, Xinchen},
+  title     = {Learning Structured Output Representation using Deep Conditional Generative Models},
+  booktitle = {Advances in Neural Information Processing Systems},
+  year      = {2015},
+  volume    = {28},
+  pages     = {3483--3491},
+}
+
+@inproceedings{ronneberger2015unet,
+  author    = {Ronneberger, Olaf and Fischer, Philipp and Brox, Thomas},
+  title     = {{U-Net}: Convolutional Networks for Biomedical Image Segmentation},
+  booktitle = {Medical Image Computing and Computer-Assisted Intervention},
+  year      = {2015},
+  pages     = {234--241},
+  doi       = {10.1007/978-3-319-24574-4_28},
 }
 
 @online{amd8400f,
@@ -283,7 +390,7 @@
 @online{nvidiaorinano_clocks,
   author       = {{NVIDIA Corporation}},
   title        = {{NVIDIA Jetson Linux Developer Guide: Supported Modes and Power Efficiency}},
-  year         = {2024},
+  version      = {Jetson Linux r36.4.4},
   url          = {https://docs.nvidia.com/jetson/archives/r36.4.4/DeveloperGuide/SD/PlatformPowerAndPerformance/JetsonOrinNanoSeriesJetsonOrinNxSeriesAndJetsonAgxOrinSeries.html},
   urldate      = {2026-05-13},
 }
