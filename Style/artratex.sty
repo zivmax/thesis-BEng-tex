@@ -335,9 +335,9 @@
     \AtEndPreamble{\RequirePackage{hyperref}}% enable biblatex detection of hyperref
     \ifartx@numbers% enable numbered citation style
         \ifartx@super% enable superscripted citation style
-            \RequirePackage[backend=biber,style=\artxbibernum,mincitenames=1,maxcitenames=2]{biblatex}%
+            \RequirePackage[backend=biber,style=\artxbibernum,mincitenames=1,maxcitenames=2,doi=false,eprint=false,isbn=false]{biblatex}%
         \else
-            \RequirePackage[backend=biber,style=\artxbibernum,mincitenames=1,maxcitenames=2]{biblatex}%
+            \RequirePackage[backend=biber,style=\artxbibernum,mincitenames=1,maxcitenames=2,doi=false,eprint=false,isbn=false]{biblatex}%
             \renewrobustcmd*{\citet}{\textcite}%
             \renewrobustcmd*{\citep}{\parencite}%
         \fi
@@ -664,4 +664,3 @@
 \fi
 %---------------------------------------------------------------------------%
 \endinput
-

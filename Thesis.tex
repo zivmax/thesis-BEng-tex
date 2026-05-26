@@ -86,17 +86,11 @@
 %\intotoc{\listtablename}% add link to contents table and bookmark
 %\listoftables% tables catalog
 }
-\input{Tex/Prematter}% list of symbols, preface content
 %-
 %-> Mainmatter
 %-
 \mainmatter% initialize the environment
 \input{Tex/Mainmatter}% main content
-%-
-%-> Appendix
-%-
-\appendix% initialize appendix chapters
-\input{Tex/Appendix}% reproducibility appendix
 %-
 %-> Bibliography
 %-
@@ -106,6 +100,11 @@
 }{%
 \printbibliography% bibliography
 }
+%-
+%-> Appendix
+%-
+\appendix% initialize appendix chapters
+\input{Tex/Appendix}% reproducibility appendix
 %-
 %-> Backmatter
 %-

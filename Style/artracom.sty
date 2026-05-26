@@ -86,10 +86,33 @@
 \providecommand{\Soptr}{\operatorname{\mathcal{S}}}% solution operator
 \providecommand{\Des}[1]{\mathrm{#1}}% descriptive superscripts and subscripts in roman type 
 %-
+%-> Bibliography checklist overrides
+%-
+% SIST asks references not to invent missing publication places/publishers.
+% Keep the fields when present, but omit "[S.l. : s.n.]".
+\AtBeginBibliography{%
+  \renewbibmacro*{location+institution+date}{%
+    \printlist{location}%
+    \iflistundef{institution}{\setunit*{\addcomma\space}}{\setunit*{\addcolon\space}}%
+    \printlist{institution}%
+    \ifboolexpr{test {\iflistundef{location}} and test {\iflistundef{institution}}}
+      {}
+      {\setunit*{\addcomma\space}}%
+    \usebibmacro{date}%
+    \newunit}%
+  \renewbibmacro*{publisher+location+date}{%
+    \printlist{location}%
+    \iflistundef{publisher}{\setunit*{\addcomma\space}}{\setunit*{\addcolon\space}}%
+    \printlist{publisher}%
+    \ifboolexpr{test {\iflistundef{location}} and test {\iflistundef{publisher}}}
+      {}
+      {\setunit*{\addcomma\space}}%
+    \usebibmacro{date}}%
+}
+%-
 %-> Graphical length factor
 %-
 \providecommand*{\MyFactor}{0.6}% for single figure
 \providecommand*{\MySubFactor}{0.45}% for subfigure
 %---------------------------------------------------------------------------%
 \endinput
-
