@@ -1,0 +1,68 @@
+\section{符号与缩写}
+
+\subsection*{字符}
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{>{\centering\arraybackslash}p{0.16\textwidth}p{0.48\textwidth}>{\centering\arraybackslash}p{0.18\textwidth}}
+\hline
+\textbf{Symbol} & \textbf{Description} & \textbf{Unit} \\
+\hline
+$\mathbf{p}$ & 位置向量 & $\Unit{m}$ \\
+$\mathbf{v}$ & 线速度向量 & $\Unit{m \cdot s^{-1}}$ \\
+$\boldsymbol{\omega}$ & 角速度向量 & $\Unit{rad \cdot s^{-1}}$ \\
+$\mathbf{q}$ & 单位四元数 & $\Unit{1}$ \\
+$\Delta t$ & 仿真步长 & $\Unit{s}$ \\
+$a_t$ & 策略在时刻$t$输出的任务空间动作 & $\Unit{1}$ \\
+$o_t$ & 策略在时刻$t$接收的观测 & $\Unit{1}$ \\
+$O_t$ & 历史观测窗口 & $\Unit{1}$ \\
+$C_t$ & 未来目标条件窗口 & $\Unit{1}$ \\
+$A_t$ & 动作块序列 & $\Unit{1}$ \\
+$H_o$ & 历史观测窗口长度 & $\Unit{1}$ \\
+$H_a$ & 动作块预测长度 & $\Unit{1}$ \\
+$H_c$ & 未来条件窗口长度 & $\Unit{1}$ \\
+$\phi_t$ & 离散任务阶段索引 & $\Unit{1}$ \\
+$\eta_t$ & 观测噪声项 & $\Unit{1}$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection*{算子}
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{>{\centering\arraybackslash}p{0.22\textwidth}p{0.45\textwidth}}
+\hline
+\textbf{Symbol} & \textbf{Description} \\
+\hline
+$\Delta$ & 差分或相对量 \\
+$\|\cdot\|$ & 欧氏范数 \\
+$\mathbb{E}[\cdot]$ & 期望 \\
+$\otimes$ & 四元数乘法 \\
+$R(q)$ & 四元数$q$对应的旋转矩阵 \\
+$d_R(\cdot,\cdot)$ & 四元数姿态测地距离 \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection*{缩写}
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{>{\centering\arraybackslash}p{0.22\textwidth}p{0.52\textwidth}}
+\hline
+\textbf{Abbreviation} & \textbf{Description} \\
+\hline
+ACT & Action Chunking Transformer \\
+BC & Behavior Cloning, 行为克隆 \\
+BC-RNN & Recurrent Behavior Cloning, 循环行为克隆 \\
+DDIM & Denoising Diffusion Implicit Models \\
+DP & Diffusion Policy \\
+EE & End Effector, 末端执行器 \\
+FSM & Finite-State Machine, 有限状态机 \\
+GT & Ground Truth, 仿真真值观测 \\
+MPC & Model Predictive Control, 模型预测控制 \\
+SE(3) & Special Euclidean Group, 三维刚体位姿群 \\
+\hline
+\end{tabular}
+\end{center}

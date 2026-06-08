@@ -1,6 +1,6 @@
 \chapter{补充材料}
 
-\input{Tex/Prematter}
+\input{Tex/AppendixSymbols}
 
 \section{实验复现细节}
 
@@ -32,7 +32,7 @@ BC和BC-RNN使用动作块回归、夹爪闭合事件预测和阶段分类的联
         动作/噪声、夹爪闭合、阶段损失权重 & 1.0/5.0/1.0 & 1.0/5.0/1.0 & 1.0/5.0/1.0 & 1.0/5.0/1.0 \\
         KL损失权重与预热步数 & --- & --- & 10.0$/\,$10000 & --- \\
         验证选择准则 & 最低验证动作损失 & 最低验证动作损失 & 最低验证动作损失 & 最低验证噪声预测损失 \\
-        检查点 & \texttt{checkpoints/bc\_medium/best.pt} & \texttt{checkpoints/bcrnn\_medium/best.pt} & \texttt{checkpoints/act\_cvae\_medium/best.pt} & \texttt{checkpoints/diffusion\_medium/best.pt} \\
+        检查点 & \path{checkpoints/bc_easy/best.pt} & \path{checkpoints/bcrnn_easy/best.pt} & \path{checkpoints/act_cvae_easy/best.pt} & \path{checkpoints/diffusion_easy/best.pt} \\
         规划执行步数 & 16 & 16 & 16 & 16 \\
         夹爪闭合阈值 & 0.5 & 0.5 & 0.5 & 0.5 \\
         \hline
@@ -52,14 +52,14 @@ BC和BC-RNN使用动作块回归、夹爪闭合事件预测和阶段分类的联
     \centering
     \scriptsize
     \resizebox{\textwidth}{!}{%
-    \begin{tabular}{p{0.20\textwidth}p{0.26\textwidth}cp{0.36\textwidth}}
+    \begin{tabular}{>{\raggedright\arraybackslash}p{0.20\textwidth}>{\raggedright\arraybackslash}p{0.26\textwidth}c>{\raggedright\arraybackslash}p{0.36\textwidth}}
         \hline
         结果来源 & 配置/脚本 & 工作进程数 & 每个工作进程的回合数与种子范围 \\
         \hline
-        DP真实与含噪声矩阵、FSM-MPC专家真实与含噪声矩阵 & \texttt{scripts/run\_thesis\_eval\_matrix.sh}，\texttt{EPISODES=200}，\texttt{WORKERS=6} & 6 & worker 0--5的起始种子分别为0, 100000, 200000, 300000, 400000, 500000；回合数为34, 34, 33, 33, 33, 33；种子范围为0--33, 100000--100033, 200000--200032, 300000--300032, 400000--400032, 500000--500032。 \\
-        BC、BC-RNN、ACT真实运动分解矩阵 & \texttt{scripts/run\_thesis\_gt\_policy\_decomp\_matrix.sh}，\texttt{EPISODES=200}，\texttt{WORKERS=6} & 6 & 与6-worker配置相同：0--33, 100000--100033, 200000--200032, 300000--300032, 400000--400032, 500000--500032。 \\
-        BC含噪声矩阵 & \texttt{scripts/run\_thesis\_noisy\_policy\_matrix.sh}，\texttt{EPISODES=200}，\texttt{WORKERS=6} & 6 & 与6-worker配置相同：0--33, 100000--100033, 200000--200032, 300000--300032, 400000--400032, 500000--500032。 \\
-        BC-RNN和ACT含噪声矩阵 & \texttt{scripts/run\_thesis\_noisy\_policy\_matrix.sh}，\texttt{EPISODES=200}，\texttt{WORKERS=8} & 8 & worker 0--7的起始种子分别为0, 100000, 200000, 300000, 400000, 500000, 600000, 700000；每个worker运行25个回合；种子范围为0--24, 100000--100024, 200000--200024, 300000--300024, 400000--400024, 500000--500024, 600000--600024, 700000--700024。 \\
+        DP真实与含噪声矩阵、FSM-MPC专家真实与含噪声矩阵 & \path{scripts/run_thesis_eval_matrix.sh}，\texttt{EPISODES=200}，\texttt{WORKERS=6} & 6 & worker 0--5的起始种子分别为0, 100000, 200000, 300000, 400000, 500000；回合数为34, 34, 33, 33, 33, 33；种子范围为0--33, 100000--100033, 200000--200032, 300000--300032, 400000--400032, 500000--500032。 \\
+        BC、BC-RNN、ACT真实运动分解矩阵 & \path{scripts/run_thesis_gt_policy_decomp_matrix.sh}，\texttt{EPISODES=200}，\texttt{WORKERS=6} & 6 & 与6-worker配置相同：0--33, 100000--100033, 200000--200032, 300000--300032, 400000--400032, 500000--500032。 \\
+        BC含噪声矩阵 & \path{scripts/run_thesis_noisy_policy_matrix.sh}，\texttt{EPISODES=200}，\texttt{WORKERS=6} & 6 & 与6-worker配置相同：0--33, 100000--100033, 200000--200032, 300000--300032, 400000--400032, 500000--500032。 \\
+        BC-RNN和ACT含噪声矩阵 & \path{scripts/run_thesis_noisy_policy_matrix.sh}，\texttt{EPISODES=200}，\texttt{WORKERS=8} & 8 & worker 0--7的起始种子分别为0, 100000, 200000, 300000, 400000, 500000, 600000, 700000；每个worker运行25个回合；种子范围为0--24, 100000--100024, 200000--200024, 300000--300024, 400000--400024, 500000--500024, 600000--600024, 700000--700024。 \\
         \hline
     \end{tabular}
     }

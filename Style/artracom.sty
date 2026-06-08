@@ -91,6 +91,7 @@
 % SIST asks references not to invent missing publication places/publishers.
 % Keep the fields when present, but omit "[S.l. : s.n.]".
 \AtBeginBibliography{%
+  \hypersetup{urlcolor=black}%
   \renewbibmacro*{location+institution+date}{%
     \printlist{location}%
     \iflistundef{institution}{\setunit*{\addcomma\space}}{\setunit*{\addcolon\space}}%
