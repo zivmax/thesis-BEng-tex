@@ -42,23 +42,28 @@
 %- [math]% enable some extra math packages
 \usepackage{artracom}% user defined commands
 \usepackage{pdfpages}% include external PDF pages (cover)
-\usepackage{array,tabularx}% readable wrapping tables
+\usepackage{array,tabularx,multirow}% readable wrapping tables
 
 \let\openbox\relax
 \usepackage{amsthm}
 \setlength{\emergencystretch}{2em}
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 \newcolumntype{Z}{>{\centering\arraybackslash}X}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}m{#1}}
+\newcommand{\ResultTableSetup}{%
+  \renewcommand{\arraystretch}{1.12}%
+  \renewcommand{\tabularxcolumn}[1]{m{##1}}%
+}
 \newcommand{\ResultCI}[2]{%
   \begingroup
   \renewcommand{\arraystretch}{0.78}%
-  \begin{tabular}[c]{@{}c@{}}#1\\[-0.35ex]{\footnotesize\mbox{#2}}\end{tabular}%
+  \begin{tabular}[c]{@{}c@{}}\rule{0pt}{12pt}#1\\[-0.35ex]{\footnotesize\mbox{#2}}\rule[-4pt]{0pt}{4pt}\end{tabular}%
   \endgroup
 }
 \newcommand{\BestResultCI}[2]{%
   \begingroup
   \renewcommand{\arraystretch}{0.78}%
-  \begin{tabular}[c]{@{}c@{}}\textbf{#1}\\[-0.35ex]{\footnotesize\bfseries\mbox{#2}}\end{tabular}%
+  \begin{tabular}[c]{@{}c@{}}\rule{0pt}{12pt}\textbf{#1}\\[-0.35ex]{\footnotesize\bfseries\mbox{#2}}\rule[-4pt]{0pt}{4pt}\end{tabular}%
   \endgroup
 }
 
