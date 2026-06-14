@@ -6,7 +6,7 @@
 
 \section{实验复现信息}
 
-正文和附录中引用的成功率与验证损失数值均已在引用前与原始评估日志逐项核对。
+闭环成功率按成功回合数除以总评估回合数计算；除特别说明外，每个策略-环境组合包含750个闭环评估回合，置信区间使用95\% Wilson区间。
 
 \begin{table}[!htbp]
     \caption{实验环境配置摘要。}
@@ -20,57 +20,198 @@
         \hline
         翻滚平移，无噪观测 & 无噪观测配置 & 真实状态观测 & 随机初始姿态，空间轴$15\,\mathrm{deg/s}$旋转，线速度盒$[-0.075,-0.075,-0.02]$到$[0.075,0.075,0.02]$ \\
         翻滚平移，噪声观测 & 噪声观测配置 & 含噪观测流 & 与翻滚平移无噪观测相同运动，加入漂移、高斯、离群点、随机丢弃和2帧时延 \\
-        自旋平移，无噪观测（验证） & 无噪观测配置 & 真实状态观测 & 固定姿态，绕$z$轴$30$--$60\,\mathrm{deg/s}$自旋，线速度盒$[-0.10,-0.10,-0.02]$到$[0.10,0.10,0.02]$ \\
-        自旋平移，噪声观测（验证） & 噪声观测配置 & 含噪观测流 & 与自旋平移无噪观测相同运动，加入噪声感知组件 \\
+        自旋平移，无噪观测 & 无噪观测配置 & 真实状态观测 & 固定姿态，绕$z$轴$30$--$60\,\mathrm{deg/s}$自旋，线速度盒$[-0.10,-0.10,-0.02]$到$[0.10,0.10,0.02]$ \\
+        自旋平移，噪声观测 & 噪声观测配置 & 含噪观测流 & 与自旋平移无噪观测相同运动，加入噪声感知组件 \\
         \hline
     \end{tabularx}
 \end{table}
 
-在完整目标中心表示的主数据集中（历史长度16），随机姿态翻滚平移场景包含193575个训练窗口和10203个验证窗口，来自5000条成功专家示教。数据处理设置启用抓取阶段筛选，动作来源为专家参考轨迹，采样步幅为4，验证比例0.05，随机种子42，动作块长度32，未来条件长度50，仿真步长0.01 s。
+主数据集采用完整目标中心表示（历史长度16），从5000条成功专家示教中构造。其中，随机姿态翻滚平移场景包含193575个训练窗口和10203个验证窗口，定轴自旋平移场景包含198936个训练窗口和9921个验证窗口。数据处理设置如下：使用专家参考轨迹作为动作来源，启用抓取阶段筛选，采样步幅为4，验证比例0.05，随机种子42。统一采用动作块长度32、未来条件长度50、仿真步长0.01 s。数据量消融中的10\%、25\%、50\%和100\%分别对应500、1250、2500和5000条成功示教；除示教条数外，数据处理规则保持一致。
+
+\begin{table}[!htbp]
+    \caption{训练数据构造明细。窗口数统计对应完整目标中心表示、历史长度16和100\%示教数据。}
+    \label{tab:dataset-construction-details}
+    \centering
+    \small
+    \renewcommand{\arraystretch}{1.15}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.22\textwidth}>{\centering\arraybackslash}p{0.13\textwidth}>{\centering\arraybackslash}p{0.20\textwidth}Y}
+        \hline
+        场景 & 成功示教数 & 训练/验证窗口数 & 数据处理说明 \\
+        \hline
+        随机姿态翻滚平移 & 5000 & 193575 / 10203 & 初始姿态随机，空间轴旋转；仅保留抓取相关阶段窗口，动作标签来自专家参考轨迹。 \\
+        定轴自旋平移 & 5000 & 198936 / 9921 & 初始姿态固定，绕竖直轴自旋；窗口生成、验证划分和动作标签规则与翻滚场景一致。 \\
+        \hline
+    \end{tabularx}
+\end{table}
 
 \section{训练与运行时超参数}
 
+所有策略训练1500轮，并使用AdamW优化器、余弦退火学习率调度、0.999的EMA衰减和1.0的梯度范数裁剪阈值。统一动作接口采用长度为32的动作块，闭环执行时每次提交前16步动作，闭合预测阈值为0.5；BC、BC-RNN和ACT在翻滚平移与自旋平移两个场景中使用相同优化器协议，DP 12M在翻滚平移和自旋平移两个场景中采用了不同的学习率和预热步数。表~\ref{tab:training-runtime-protocol}列出各策略存在差异的训练参数和检查点选择指标。
+
 \begin{table}[!htbp]
-    \caption{主策略训练和运行时协议摘要。}
+    \caption{主策略差异训练参数。权重衰减、批次大小和预热步数随策略而变，未列出的运行时协议在各策略间保持一致。}
     \label{tab:training-runtime-protocol}
     \centering
     \small
-    \renewcommand{\arraystretch}{1.12}
-    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.20\textwidth}ZZZZ}
+    \renewcommand{\arraystretch}{1.15}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.21\textwidth}>{\centering\arraybackslash}p{0.13\textwidth}>{\centering\arraybackslash}p{0.13\textwidth}>{\centering\arraybackslash}p{0.13\textwidth}>{\centering\arraybackslash}p{0.11\textwidth}Y}
         \hline
-        项目 & BC & BC-RNN & ACT & DP 12M \\
+        策略/场景 & 学习率 & 批次大小 & 权重衰减 & 预热步数 & 检查点选择指标 \\
         \hline
-        训练轮次 & 1500 & 1500 & 1500 & 1500 \\
-        学习率 & $2\times10^{-4}$ & $2\times10^{-4}$ & $2\times10^{-4}$ & $1\times10^{-4}$ \\
-        EMA衰减 & 0.999 & 0.999 & 0.999 & 0.999 \\
-        主要损失函数 & 动作$L_1$ & 动作$L_1$ & 动作$L_1$+KL & 噪声预测 \\
-        闭合/阶段辅助监督 & BCE/CE & BCE/CE & BCE/CE & BCE/CE \\
-        检查点选择 & 验证动作损失 & 验证动作损失 & 验证动作损失 & 验证噪声损失 \\
-        动作块长度 & 32 & 32 & 32 & 32 \\
-        执行窗口 & 16 & 16 & 16 & 16 \\
-        闭合阈值 & 0.5 & 0.5 & 0.5 & 0.5 \\
+        BC & $2\times10^{-4}$ & 16384 & $1\times10^{-6}$ & 300 & 验证动作损失最低 \\
+        BC-RNN & $2\times10^{-4}$ & 8192 & $1\times10^{-6}$ & 300 & 验证动作损失最低 \\
+        ACT & $2\times10^{-4}$ & 1024 & $1\times10^{-4}$ & 1000 & 验证动作损失最低 \\
+        DP 12M（翻滚） & $1\times10^{-4}$ & 12288 & $1\times10^{-6}$ & 500 & 验证噪声预测损失最低 \\
+        DP 12M（自旋） & $2\times10^{-4}$ & 12288 & $1\times10^{-6}$ & 300 & 验证噪声预测损失最低 \\
         \hline
     \end{tabularx}
 \end{table}
 
-ACT使用变换器维度132、4个注意力头、2层编码器、2层解码器、FFN维度544、隐变量维度32、随机失活率0.1、KL权重10.0和10000步KL预热。BC-RNN主模型约1.507M参数，扩容版本约6.009M参数。DP 12M使用条件1D U-Net，100个训练扩散步和10个推理采样步。
-
-所有策略使用AdamW优化器和余弦退火学习率调度（末端衰减因子0.01），梯度范数裁剪阈值均为1.0。表~\ref{tab:training-optimizer}列出各策略的批次大小、权重衰减和学习率预热步数。
+训练目标由主任务损失和辅助监督组成。BC与BC-RNN使用动作$L_1$损失作为主指标；ACT在动作损失之外加入CVAE的KL正则项；DP使用扩散噪声预测损失作为主指标。所有策略均带有闭合预测头和阶段预测头，闭合预测头使用二分类BCE损失，阶段预测头使用5类CE损失。表~\ref{tab:loss-selection-details}给出损失权重和早停规则。
 
 \begin{table}[!htbp]
-    \caption{训练优化器与调度配置。}
-    \label{tab:training-optimizer}
+    \caption{训练损失和模型选择规则。}
+    \label{tab:loss-selection-details}
     \centering
     \small
-    \begin{tabular}{lcccc}
+    \renewcommand{\arraystretch}{1.15}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.15\textwidth}YYY}
         \hline
-        项目 & BC & BC-RNN & ACT & DP 12M \\
+        模型 & 主损失与权重 & 辅助监督与正则项 & 模型选择与早停规则 \\
         \hline
-        批次大小 & 16384 & 8192 & 1024 & 12288 \\
-        权重衰减 & $1\times10^{-6}$ & $1\times10^{-6}$ & $1\times10^{-4}$ & $1\times10^{-6}$ \\
-        学习率预热步数 & 300 & 300 & 1000 & 500 \\
+        BC & 动作$L_1$，权重1.0 & 闭合BCE权重5.0；阶段CE权重1.0 & 选择验证动作损失最低的检查点；连续10次验证无改进时早停。 \\
+        BC-RNN & 动作$L_1$，权重1.0 & 闭合BCE权重5.0；阶段CE权重1.0 & 选择验证动作损失最低的检查点；连续10次验证无改进时早停。 \\
+        ACT & 动作$L_1$，权重1.0 & KL权重最高10.0，前10000步线性预热；闭合BCE权重5.0；阶段CE权重1.0 & 选择验证动作损失最低的检查点；连续5次验证无改进时早停。 \\
+        DP & 噪声预测损失，权重1.0 & 闭合BCE权重5.0；阶段CE权重1.0 & 选择验证噪声预测损失最低的检查点；不使用早停，完整训练1500轮。 \\
         \hline
-    \end{tabular}
+    \end{tabularx}
+\end{table}
+
+\begin{table}[!htbp]
+    \caption{定轴自旋平移场景新增实验设置明细。表中列出每组实验改变的因素；其余训练协议遵循表~\ref{tab:training-runtime-protocol}和表~\ref{tab:loss-selection-details}。}
+    \label{tab:spin-training-details}
+    \centering
+    \small
+    \renewcommand{\arraystretch}{1.15}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.16\textwidth}>{\raggedright\arraybackslash}p{0.21\textwidth}YY}
+        \hline
+        实验族 & 涉及模型 & 改变因素 & 固定设置 \\
+        \hline
+        主策略对比 & BC、BC-RNN、ACT、DP 12M & 策略架构 & 完整目标中心表示，$H_o=16$，无噪声训练数据；训练集198936个窗口，验证集9921个窗口。 \\
+        表示消融 & BC、ACT & 坐标系和历史表示维度 & $H_o=16$；动作块长度、执行窗口、优化器协议和检查点选择规则保持不变。 \\
+        噪声增强 & BC-RNN、ACT、DP 12M & 训练时观测扰动 & 完整目标中心表示，$H_o=16$；评估时使用含噪观测流。 \\
+        数据量消融 & BC-RNN、ACT & 成功示教子集规模 & 完整目标中心表示，$H_o=16$；验证比例、采样步幅、动作块长度和未来条件长度保持一致。 \\
+        历史结构消融 & BC-RNN、ACT & 历史窗口长度$H_o$ & 紧凑目标中心表示；动作块长度为32，未来条件长度为50，执行窗口为16。 \\
+        容量与DP参考 & BC-RNN 6M、DP 1.5M/6M/12M/18M & 模型容量、坐标表示和噪声设置 & 完整目标中心表示，$H_o=16$；DP容量变体使用相同扩散步数和DDIM推理步数。 \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+表示消融中的四种历史输入分别为目标中心紧凑表示、目标中心完整表示、世界坐标紧凑表示和世界坐标完整表示，对应历史输入维度8、14、15和21；未来条件维度均为7，动作维度均为8。噪声增强实验在训练时在线扰动观测序列：位置噪声标准差为0.03 m，姿态噪声标准差为$10^\circ$，线速度噪声标准差为0.02 m/s，角速度噪声标准差为$5^\circ$/s，随机丢弃率为0.05，漂移标准差为0.01，离群点率为0.02，离群幅值为0.15，观测时延为2帧。容量实验中，BC-RNN 6M将GRU隐藏维度从218增至473；DP容量变体的自旋场景学习率均为$2\times10^{-4}$，预热步数均为300。
+
+\begin{table}[!htbp]
+    \caption{定轴自旋平移场景主策略、噪声增强和容量实验的最低验证损失。BC、BC-RNN和ACT报告验证动作损失；DP报告验证噪声预测损失。}
+    \label{tab:spin-best-validation-loss}
+    \centering
+    \small
+    \renewcommand{\arraystretch}{1.12}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.18\textwidth}Y>{\raggedright\arraybackslash}p{0.20\textwidth}>{\centering\arraybackslash}p{0.18\textwidth}}
+        \hline
+        实验族 & 设置 & 模型 & 最低验证损失 \\
+        \hline
+        主策略 & 完整目标中心，$H_o=16$ & BC & 0.1719 \\
+        主策略 & 完整目标中心，$H_o=16$ & BC-RNN & 0.1245 \\
+        主策略 & 完整目标中心，$H_o=16$ & ACT & 0.1029 \\
+        主策略 & 完整目标中心，$H_o=16$ & DP 12M & 0.0218 \\
+        噪声增强 & 完整目标中心，$H_o=16$ & BC-RNN & 0.1494 \\
+        噪声增强 & 完整目标中心，$H_o=16$ & ACT & 0.1467 \\
+        噪声增强 & 完整目标中心，$H_o=16$ & DP 12M & 0.0306 \\
+        容量参考 & 完整目标中心，$H_o=16$ & BC-RNN 6M & 0.1448 \\
+        容量参考 & 完整目标中心，$H_o=16$ & DP 1.5M & 0.0710 \\
+        容量参考 & 完整目标中心，$H_o=16$ & DP 6M & 0.0274 \\
+        容量参考 & 完整目标中心，$H_o=16$ & DP 12M & 0.0218 \\
+        容量参考 & 完整目标中心，$H_o=16$ & DP 18M & 0.0206 \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+\begin{table}[!htbp]
+    \caption{定轴自旋平移场景数据规模消融的最低验证动作损失。}
+    \label{tab:spin-data-scale-validation-loss}
+    \centering
+    \small
+    \renewcommand{\arraystretch}{1.12}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.18\textwidth}Y>{\raggedright\arraybackslash}p{0.18\textwidth}>{\centering\arraybackslash}p{0.18\textwidth}}
+        \hline
+        模型 & 固定设置 & 数据比例 & 最低验证损失 \\
+        \hline
+        BC-RNN & 完整目标中心表示，$H_o=16$ & 10\% & 0.2602 \\
+        BC-RNN & 完整目标中心表示，$H_o=16$ & 25\% & 0.1640 \\
+        BC-RNN & 完整目标中心表示，$H_o=16$ & 50\% & 0.1382 \\
+        BC-RNN & 完整目标中心表示，$H_o=16$ & 100\% & 0.1245 \\
+        ACT & 完整目标中心表示，$H_o=16$ & 10\% & 0.1361 \\
+        ACT & 完整目标中心表示，$H_o=16$ & 25\% & 0.1132 \\
+        ACT & 完整目标中心表示，$H_o=16$ & 50\% & 0.1051 \\
+        ACT & 完整目标中心表示，$H_o=16$ & 100\% & 0.1029 \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+\begin{table}[!htbp]
+    \caption{定轴自旋平移场景历史窗口长度消融的最低验证动作损失。}
+    \label{tab:spin-history-validation-loss}
+    \centering
+    \small
+    \renewcommand{\arraystretch}{1.12}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.18\textwidth}Y>{\raggedright\arraybackslash}p{0.18\textwidth}>{\centering\arraybackslash}p{0.18\textwidth}}
+        \hline
+        模型 & 固定设置 & 历史窗口长度 & 最低验证损失 \\
+        \hline
+        BC-RNN & 紧凑目标中心表示 & $H_o=1$ & 0.1316 \\
+        BC-RNN & 紧凑目标中心表示 & $H_o=8$ & 0.1244 \\
+        BC-RNN & 紧凑目标中心表示 & $H_o=32$ & 0.1160 \\
+        BC-RNN & 紧凑目标中心表示 & $H_o=64$ & 0.1219 \\
+        ACT & 紧凑目标中心表示 & $H_o=1$ & 0.1283 \\
+        ACT & 紧凑目标中心表示 & $H_o=8$ & 0.1082 \\
+        ACT & 紧凑目标中心表示 & $H_o=32$ & 0.1027 \\
+        ACT & 紧凑目标中心表示 & $H_o=64$ & 0.1011 \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+\begin{table}[!htbp]
+    \caption{BC、BC-RNN和ACT结构补充参数。所有模型均使用闭合预测头和5类阶段预测头，动作块长度为32。}
+    \label{tab:model-structure-details}
+    \centering
+    \small
+    \renewcommand{\arraystretch}{1.15}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.14\textwidth}YY>{\centering\arraybackslash}p{0.13\textwidth}>{\centering\arraybackslash}p{0.13\textwidth}>{\centering\arraybackslash}p{0.11\textwidth}}
+        \hline
+        模型 & 编码结构 & 主体结构 & 历史维度 & 未来维度 & 动作维度 \\
+        \hline
+        BC & 历史编码通道为64、128、192，卷积核5；未来条件编码通道为64、128；条件维度192。 & 3层MLP，每层480维。 & 14 & 7 & 8 \\
+        BC-RNN & 未来条件编码通道$(64,128)$；条件维度192。 & 2层GRU，隐藏维度218，随机失活率0.1；6M扩容版本隐藏维度473。 & 14 & 7 & 8 \\
+        ACT & CVAE编码器2层，隐变量维度32。 & Transformer维度132，4个注意力头，2层编码器，2层解码器，FFN维度544，随机失活率0.1。 & 14 & 7 & 8 \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+\begin{table}[!htbp]
+    \caption{DP容量变体结构补充参数。所有DP变体均使用条件1D U-Net，100个训练扩散步和10个推理采样步；历史输入维度为14，未来条件维度为7，动作维度为8。}
+    \label{tab:dp-structure-details}
+    \centering
+    \small
+    \renewcommand{\arraystretch}{1.15}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.16\textwidth}YY>{\centering\arraybackslash}p{0.18\textwidth}>{\centering\arraybackslash}p{0.13\textwidth}}
+        \hline
+        容量变体 & 编码通道 & U-Net设置 & 通道倍数 & 批次大小 \\
+        \hline
+        DP 1.5M & 历史通道为64、128、128；未来通道为64、128。 & 条件维度80；基通道64。 & 1、2、2 & 32768 \\
+        DP 6M & 历史通道为64、128、128；未来通道为64、128。 & 条件维度128；基通道88。 & 1、2、4 & 16384 \\
+        DP 12M & 历史通道为32、64、96；未来通道为32、64。 & 条件维度160；基通道128。 & 1、2、4 & 12288 \\
+        DP 18M & 历史通道为32、64、96；未来通道为32、64。 & 条件维度160；基通道160。 & 1、2、4 & 12288 \\
+        \hline
+    \end{tabularx}
 \end{table}
 
 \section{完整结果表}
@@ -93,7 +234,7 @@ ACT使用变换器维度132、4个注意力头、2层编码器、2层解码器�
 
 \section{扩散策略容量扩展实验}\label{sec:appendix-dp}
 
-正文§4.1主实验表明DP 12M在随机姿态翻滚平移场景中仅2.5\%，落在失败区间内。本节汇总DP容量（1.5M至18M）和表示扩展的完整实验结果，检验容量增加或表示改变能否解决该场景的闭环控制问题。表中自旋平移验证场景同时提供DP的实现正确性验证（与BC的45.7\%平行对照实验）：DP 12M在该场景中达41.9\%，排除了实现错误，表明DP在翻滚平移场景中的低成功率是系统性失效而非实现缺陷。所有DP-12M及以下容量的行均为750回合；DP-18M仅引用已完成750回合的评估记录。
+正文§4.1主实验表明DP 12M在随机姿态翻滚平移场景中仅2.5\%，落在失败区间内。本节汇总DP容量（1.5M至18M）和表示扩展的完整实验结果，以检验通过增加容量或改变表示是否能够解决该场景的闭环控制问题。表中自旋平移验证场景同时验证了DP的实现正确性（与BC的45.7\%构成平行对照实验）：DP 12M在该场景中达到41.9\%的成功率，与BC发挥水平相当，表明DP在简单运动场景中工作正常。因此，DP在翻滚平移场景中的低成功率（2.5\%）可归因于该场景对扩散策略本身构成的根本性挑战。所有DP-12M及以下容量的行均为750回合；DP-18M仅引用已完成750回合的评估记录。
 
 \begin{table}[!htbp]
     \caption{DP扩展性和表示结果。验证损失为最佳检查点的验证集噪声预测损失；方括号内为95\% Wilson置信区间。}
@@ -105,25 +246,23 @@ ACT使用变换器维度132、4个注意力头、2层编码器、2层解码器�
         \hline
         实验 & 验证损失 & 翻滚平移成功率 & 自旋平移成功率（验证参考） \\
         \hline
-        DP 1.5M，完整目标中心 & 0.07102 & \ResultCI{1.3\%}{[0.7, 2.4]} & \ResultCI{14.9\%}{[12.6, 17.7]} \\
-        DP 6M，完整目标中心 & 0.02739 & \ResultCI{2.8\%}{[1.8, 4.2]} & \ResultCI{36.9\%}{[33.6, 40.4]} \\
-        DP 12M，完整目标中心 & 0.02184 & \ResultCI{2.5\%}{[1.6, 3.9]} & \BestResultCI{41.9\%}{[38.4, 45.4]} \\
-        DP 18M，完整目标中心 & \textbf{0.02055} & -- & \ResultCI{40.4\%}{[36.9, 44.0]} \\
-        DP 12M，完整世界坐标 & 0.02614 & -- & \ResultCI{2.9\%}{[1.9, 4.4]} \\
-        DP 12M，完整世界坐标，噪声增强 & 0.05159 & -- & \ResultCI{1.2\%}{[0.6, 2.3]} \\
+        DP 1.5M，完整目标中心 & 0.0710 & \ResultCI{1.3\%}{[0.7, 2.4]} & \ResultCI{14.9\%}{[12.6, 17.7]} \\
+        DP 6M，完整目标中心 & 0.0274 & \ResultCI{2.8\%}{[1.8, 4.2]} & \ResultCI{36.9\%}{[33.6, 40.4]} \\
+        DP 12M，完整目标中心 & 0.0218 & \ResultCI{2.5\%}{[1.6, 3.9]} & \BestResultCI{41.9\%}{[38.4, 45.4]} \\
+        DP 18M，完整目标中心 & \textbf{0.0206} & -- & \ResultCI{40.4\%}{[36.9, 44.0]} \\
+        DP 12M，完整世界坐标 & 0.0261 & -- & \ResultCI{2.9\%}{[1.9, 4.4]} \\
+        DP 12M，完整世界坐标，噪声增强 & 0.0516 & -- & \ResultCI{1.2\%}{[0.6, 2.3]} \\
         \hline
     \end{tabularx}
 \end{table}
 
-DP在验证噪声预测损失上单调递减（0.07102$\rightarrow$0.02055），但在随机姿态翻滚平移场景中，所有容量变体均在1.3\%--2.8\%，属于失败区间（置信区间高度重叠），容量增加并未改善闭环成功率。在固定轴自旋平移验证场景中，DP随容量从14.9\%提升至41.9\%，但18M（验证损失0.02055，成功率40.4\%）与12M（验证损失0.02184，成功率41.9\%）的置信区间几乎完全重叠，差异未超出抽样噪声范围。由此可见，DP的验证噪声预测损失不能直接替代闭环成功率：更低的验证损失不一定意味着闭环成功率更高。使用完整世界坐标表示时，DP 12M仅2.9\%，噪声增强版本进一步降至1.2\%。综上，在本文的低维目标中心动作块框架中，DP在12M处容量已近饱和，且容量和表示改变均无法解决随机姿态翻滚平移场景中的闭环控制问题。
+DP的验证噪声预测损失单调递减（0.0710$\rightarrow$0.0206），但在随机姿态翻滚平移场景中，所有容量变体均在1.3\%--2.8\%，属于失败区间（置信区间高度重叠），容量增加并未改善闭环成功率。在固定轴自旋平移验证场景中，DP随容量从14.9\%提升至41.9\%，但18M（验证损失0.0206，成功率40.4\%）与12M（验证损失0.0218，成功率41.9\%）的置信区间几乎完全重叠，差异未达到统计显著水平。由此可见，DP的验证噪声预测损失不能直接替代闭环成功率：更低的验证损失不一定意味着闭环成功率更高。使用完整世界坐标表示时，DP 12M仅2.9\%，噪声增强版本进一步降至1.2\%。综上，在本文的低维目标中心动作块框架中，DP在12M处容量已近饱和，且容量和表示改变均无法解决随机姿态翻滚平移场景中的闭环控制问题。
 
-\section{结果来源索引}
+\section{统计口径与图表说明}
 
-正文和附录中所有数值均来自750回合闭环评估记录，对应原始评估日志和检查点文件。附录~\ref{app:loss-curves}中的训练曲线由训练日志解析生成，生成脚本为\texttt{scripts/plot\_appendix\_loss\_curves.py}。
+正文和附录中所有闭环成功率均按相同规则统计：若回合结束时立方体被稳定运输至目标区域，则该回合记为成功；点估计为成功回合数除以总回合数，区间估计为95\% Wilson置信区间。训练曲线展示每个训练轮次记录的训练损失和验证损失；BC、BC-RNN和ACT报告动作$L_1$损失，DP报告噪声预测损失。星号标记的是最低验证损失对应的快照位置。
 
-\section{图表说明}
-
-正文图表分为任务示意图、方法结构图和结果表三类。图\ref{fig:task-setup}示意仿真平台中的机械臂、立方体生成区域和运输目标；图\ref{fig:intro-overview}给出目标中心动作块、相位状态机以及MPC跟踪执行器之间的数据流关系；图\ref{fig:policy-architectures}对比四类模仿学习策略在统一动作块接口中的结构差异。所有结果表中的数值均来自750回合闭环评估记录。
+正文中的图和表大致归为三类：任务示意图、方法结构图和结果表。图\ref{fig:task-setup}示意仿真平台中的机械臂、立方体生成区域和运输目标；图\ref{fig:intro-overview}给出目标中心动作块、相位状态机以及MPC跟踪执行器之间的数据流关系；图\ref{fig:policy-architectures}对比四类模仿学习策略在统一动作块接口中的结构差异。
 
 \chapter{训练损失曲线}\label{app:loss-curves}
 
@@ -138,30 +277,65 @@ DP在验证噪声预测损失上单调递减（0.07102$\rightarrow$0.02055），
 
 \begin{figure}[!htbp]
     \centering
+    \includegraphics[width=\textwidth]{fig_app_loss_spin_main_policies}
+    \caption{定轴自旋平移验证场景四类主策略的训练损失曲线。前三个子图为动作$L_1$损失，DP子图为噪声预测损失；灰线为训练损失，彩色线为验证损失。}
+    \label{fig:app-loss-spin-main-policies}
+\end{figure}
+
+\begin{figure}[!htbp]
+    \centering
     \includegraphics[width=\textwidth]{fig_app_loss_act_representation}
-    \caption{ACT表示消融的训练损失曲线，覆盖目标中心紧凑表示、目标中心完整表示、世界坐标紧凑表示和世界坐标完整表示。所有子图均绘制动作$L_1$训练损失和验证损失。}
+    \caption{随机姿态翻滚平移场景中ACT表示消融的训练损失曲线，覆盖目标中心紧凑表示、目标中心完整表示、世界坐标紧凑表示和世界坐标完整表示。所有子图均绘制动作$L_1$训练损失和验证损失。}
     \label{fig:app-loss-act-representation}
 \end{figure}
 
 \begin{figure}[!htbp]
     \centering
+    \includegraphics[width=\textwidth]{fig_app_loss_spin_representation}
+    \caption{定轴自旋平移验证场景中BC和ACT表示消融的验证动作损失曲线，覆盖目标中心紧凑表示、目标中心完整表示、世界坐标紧凑表示和世界坐标完整表示。}
+    \label{fig:app-loss-spin-representation}
+\end{figure}
+
+\begin{figure}[!htbp]
+    \centering
     \includegraphics[width=\textwidth]{fig_app_loss_noise_aug}
-    \caption{噪声增强训练实验中BC-RNN和ACT的验证动作损失曲线。clean表示无噪训练数据，OTF-noise表示在线观测噪声增强训练。}
+    \caption{随机姿态翻滚平移场景噪声增强训练实验中BC-RNN和ACT的验证动作损失曲线。图例中的无噪声训练表示不扰动训练观测，噪声增强训练表示训练时在线扰动观测序列。}
     \label{fig:app-loss-noise-aug}
 \end{figure}
 
 \begin{figure}[!htbp]
     \centering
+    \includegraphics[width=\textwidth]{fig_app_loss_spin_noise_aug}
+    \caption{定轴自旋平移验证场景噪声增强训练实验中BC-RNN、ACT和DP 12M的验证损失曲线。BC-RNN和ACT使用验证动作损失，DP使用验证噪声预测损失；图例中的无噪声训练表示不扰动训练观测，噪声增强训练表示训练时在线扰动观测序列。}
+    \label{fig:app-loss-spin-noise-aug}
+\end{figure}
+
+\begin{figure}[!htbp]
+    \centering
     \includegraphics[width=\textwidth]{fig_app_loss_data_fraction}
-    \caption{数据规模消融中BC-RNN和ACT的验证动作损失曲线，覆盖10\%、25\%、50\%和100\%示教数据。}
+    \caption{随机姿态翻滚平移场景数据规模消融中BC-RNN和ACT的验证动作损失曲线，覆盖10\%、25\%、50\%和100\%示教数据。}
     \label{fig:app-loss-data-fraction}
 \end{figure}
 
 \begin{figure}[!htbp]
     \centering
     \includegraphics[width=\textwidth]{fig_app_loss_history}
-    \caption{历史长度消融中BC-RNN和ACT的验证动作损失曲线，覆盖$H_o=1,8,32,64$。}
+    \caption{随机姿态翻滚平移场景历史窗口长度消融中BC-RNN和ACT的验证动作损失曲线，覆盖$H_o=1,8,32,64$。}
     \label{fig:app-loss-history}
+\end{figure}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=\textwidth]{fig_app_loss_spin_data_fraction}
+    \caption{定轴自旋平移验证场景数据规模消融的验证动作损失曲线，覆盖BC-RNN和ACT的10\%、25\%、50\%和100\%示教数据。}
+    \label{fig:app-loss-spin-data-fraction}
+\end{figure}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=\textwidth]{fig_app_loss_spin_history}
+    \caption{定轴自旋平移验证场景历史窗口长度消融的验证动作损失曲线，覆盖紧凑目标中心表示下的$H_o=1,8,32,64$。}
+    \label{fig:app-loss-spin-history}
 \end{figure}
 
 \begin{figure}[!htbp]
